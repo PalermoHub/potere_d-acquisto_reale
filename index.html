@@ -1,34 +1,34 @@
 <!doctype html>
 <html lang="it">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<meta name="creation_Date" content="18/08/2026">
-<meta name="author" content="Giovan Battista Vitrano per OpenDataSicilia.it">
-<title>Potere d'acquisto reale | Comuni e province d'Italia</title>
-<meta name="description" content="Mappa interattiva del potere d'acquisto reale (reddito medio corretto per il costo della vita) per i comuni e le province italiane, con vista a stima OMI e vista a dato NIC Istat reale."/>
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+	<title>Potere d'acquisto reale nei comuni e province italiane: reddito IRPEF 2024 corretto per il costo della vita (OMI e NIC Istat). Mappa interattiva, classifiche e vista bivariata.</title>
+	<meta name="description" content="    <meta name="keywords" content="rischio caldo, lavoro all'aperto, divieto lavoro caldo, Worklimate, Sicilia, comuni Sicilia, caldo estremo, emergenza caldo, sicurezza sul lavoro, meteo Sicilia, ondata di calore">."/>
+    <meta name="keywords" content="    <meta name="keywords" content="rischio caldo, lavoro all'aperto, divieto lavoro caldo, Worklimate, Sicilia, comuni Sicilia, caldo estremo, emergenza caldo, sicurezza sul lavoro, meteo Sicilia, ondata di calore">
+	<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V" crossorigin="anonymous"/>
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+	<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
         integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"
+	<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"
         integrity="sha384-QfbOCebHNw8pQiPAOd2IFee2v2A5VYZxBk0+JGZ5H+3mfzVIp6zsQNkTsfGJot93" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="css/style.css?v=9"/>
-<link rel="shortcut icon" href="img/favicon.ico"/> 
-<link rel="icon" href="img/favicon.png" type="image/png"/> 
-
+	<meta name="author" content="Giovan Battista Vitrano per OpenDataSicilia.it">	
+	<meta name="creation_Date" content="18/08/2026">	
+	<link rel="stylesheet" href="css/style.css?v=9"/>
+	<link rel="shortcut icon" href="img/favicon.ico"/> 
+	<link rel="icon" href="img/favicon.png" type="image/png"/> 
 
 	    <!-- Meta tags per social sharing pen Graph Protocol -->
     <meta property="og:url" content="https://palermohub.github.io/potere_d-acquisto_reale/">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="alermo hub - Potere d'acquisto reale | Comuni e province d'Italia">
+    <meta property="og:title" content="Potere d'acquisto reale nei comuni e province italiane: reddito IRPEF 2024 corretto per il costo della vita (OMI e NIC Istat). Mappa interattiva, classifiche e vista bivariata.">
     <meta property="og:description" content="Palermo Hub - Contenitore di mappe su Palermo realizzato da OpenDataSicilia.it">
     <meta property="og:image" content="https://palermohub.github.io/potere_d-acquisto_reale/img/social_card.jpg">
 	<!-- twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta property="twitter:domain" content="palermohub.opendatasicilia.it">
     <meta property="twitter:url" content="https://palermohub.github.io/potere_d-acquisto_reale/">
-    <meta name="twitter:title" content="Palermo hub - Potere d'acquisto reale | Comuni e province d'Italia">
+    <meta name="twitter:title" content="Potere d'acquisto reale nei comuni e province italiane: reddito IRPEF 2024 corretto per il costo della vita (OMI e NIC Istat). Mappa interattiva, classifiche e vista bivariata.">
     <meta name="twitter:description" content="Palermo Hub - Contenitore di mappe su Palermo realizzato da OpenDataSicilia.it">
     <meta name="twitter:image" content="https://palermohub.github.io/potere_d-acquisto_reale/img/social_card.jpg">
 
