@@ -251,8 +251,9 @@ function switchView(view) {
    (aperto di default); su mobile la linguetta è disattivata — si apre da
    solo a ogni cambio vista e si chiude con la ✕. ── */
 const sidePanel = document.getElementById('side-panel');
-function openSidePanel() { sidePanel.classList.remove('closed'); document.body.classList.add('side-panel-open'); syncMapWithPanel(); }
-function closeSidePanel() { sidePanel.classList.add('closed'); document.body.classList.remove('side-panel-open'); syncMapWithPanel(); }
+const rankingDialBtn = document.querySelector('#dial-items [data-action="ranking"]');
+function openSidePanel() { sidePanel.classList.remove('closed'); document.body.classList.add('side-panel-open'); rankingDialBtn.classList.add('active'); syncMapWithPanel(); }
+function closeSidePanel() { sidePanel.classList.add('closed'); document.body.classList.remove('side-panel-open'); rankingDialBtn.classList.remove('active'); syncMapWithPanel(); }
 window.innerWidth <= 640 ? closeSidePanel() : openSidePanel();
 
 /* Il pannello dx è in overlay (position:fixed) sopra la mappa: il canvas
@@ -296,8 +297,9 @@ function panelOpened() { openPanelCount++; document.body.classList.add('panel-op
 function panelClosed() { openPanelCount = Math.max(0, openPanelCount - 1); if (openPanelCount === 0) document.body.classList.remove('panel-open'); }
 
 const noteOverlay = document.getElementById('note-overlay');
-function openNote() { noteOverlay.classList.add('open'); panelOpened(); }
-function closeNote() { if (!noteOverlay.classList.contains('open')) return; noteOverlay.classList.remove('open'); panelClosed(); }
+const infoDialBtn = document.querySelector('#dial-items [data-action="info"]');
+function openNote() { noteOverlay.classList.add('open'); infoDialBtn.classList.add('active'); panelOpened(); }
+function closeNote() { if (!noteOverlay.classList.contains('open')) return; noteOverlay.classList.remove('open'); infoDialBtn.classList.remove('active'); panelClosed(); }
 document.getElementById('note-close').addEventListener('click', closeNote);
 noteOverlay.addEventListener('click', (e) => { if (e.target === noteOverlay) closeNote(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNote(); });
@@ -618,9 +620,9 @@ dialItems.querySelectorAll('.dial-item').forEach(btn => {
     if (btn.dataset.action === 'home') {
       map.flyTo({ center: MAP_HOME.center, zoom: MAP_HOME.zoom, duration: 800 });
     } else if (btn.dataset.action === 'info') {
-      openNote();
+      noteOverlay.classList.contains('open') ? closeNote() : openNote();
     } else if (btn.dataset.action === 'ranking') {
-      openSidePanel();
+      sidePanel.classList.contains('closed') ? openSidePanel() : closeSidePanel();
     } else if (btn.dataset.action === 'theme') {
       setTheme(currentTheme === 'dark' ? 'light' : 'dark');
     } else if (btn.dataset.view) {
