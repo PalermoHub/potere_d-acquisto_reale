@@ -261,6 +261,11 @@ body.side-panel-open #ods-logo, body.side-panel-open .maplibregl-ctrl-bottom-rig
 .note-src-list a{font-weight:600;display:block}
 .note-src-desc{display:block;font-size:11.5px;color:var(--text-dim);margin-top:1px}
 
+.note-fig{margin:12px 0 20px;padding:0}
+.note-fig img{width:100%;height:auto;display:block;border-radius:8px;border:1px solid var(--panel-border)}
+.note-fig-narrow img{max-width:340px}
+.note-fig figcaption{font-size:11.5px;color:var(--text-dim);margin-top:6px;line-height:1.4}
+
 #note-top{
   position:absolute;right:20px;bottom:20px;z-index:3;
   width:34px;height:34px;border-radius:50%;

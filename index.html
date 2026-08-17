@@ -14,7 +14,7 @@
         integrity="sha384-QfbOCebHNw8pQiPAOd2IFee2v2A5VYZxBk0+JGZ5H+3mfzVIp6zsQNkTsfGJot93" crossorigin="anonymous"></script>
 	<meta name="author" content="Giovan Battista Vitrano per OpenDataSicilia.it">	
 	<meta name="creation_Date" content="18/08/2026">	
-	<link rel="stylesheet" href="css/style.css?v=9"/>
+	<link rel="stylesheet" href="css/style.css?v=11"/>
 	<link rel="shortcut icon" href="img/favicon.ico"/> 
 	<link rel="icon" href="img/favicon.png" type="image/png"/> 
 
@@ -306,11 +306,54 @@
 
       <div id="note-tab-hdrs">
         <button class="note-tab-hdr active" data-note-tab="metodologia"><span class="note-tab-ico">📐</span>Metodologia</button>
+        <button class="note-tab-hdr" data-note-tab="guida"><span class="note-tab-ico">🧭</span>Guida</button>
         <button class="note-tab-hdr" data-note-tab="fonti"><span class="note-tab-ico">©</span>Fonte, licenza e crediti</button>
       </div>
     </div>
 
     <div id="note-scroll">
+
+    <div class="note-tab-content" data-note-tab="guida">
+
+    <h3><span class="note-h-ico">🗺️</span>La mappa</h3>
+    <p>La mappa mostra ogni comune (o provincia) colorato secondo il potere d'acquisto reale. Trascina per spostarti, rotellina o pinch per zoomare, clicca su un'area per aprire il popup coi dettagli (reddito, costo vita, fonte del dato).</p>
+
+    <figure class="note-fig">
+      <img src="img/guide/01-menu-dial.png" alt="Screenshot: mappa con il menu a tendina aperto in alto a sinistra" loading="lazy">
+      <figcaption>Il pulsante rotondo in alto a sinistra apre il menu con le viste (Comuni / Province / Bivariata), il tasto Home per tornare all'inquadratura iniziale, il tema chiaro/scuro, le Classifiche e questa guida.</figcaption>
+    </figure>
+
+    <h3><span class="note-h-ico">📊</span>Le classifiche</h3>
+    <p>Il pulsante <b>Classifiche</b> del menu apre il pannello a destra con le posizioni migliori e peggiori per potere d'acquisto (o costo della vita), sia per comuni sia per regioni. In alto è disponibile una barra di ricerca per trovare subito un comune o una provincia.</p>
+    <p>Attiva <b>📍 Solo quest'area della mappa</b> per limitare la classifica a ciò che è visibile nella mappa in quel momento: sposta o zooma la mappa e la classifica si ricalcola da sola. Clicca su una riga della classifica per aprirla e zoomarla direttamente sulla mappa.</p>
+
+    <figure class="note-fig note-fig-narrow">
+      <img src="img/guide/02-classifiche.png" alt="Screenshot: pannello classifiche con legenda, ricerca viewport e liste a barre" loading="lazy">
+      <figcaption>Legenda, interruttore "solo quest'area" e classifica a barre: la lunghezza della barra è proporzionale al valore.</figcaption>
+    </figure>
+
+    <h3><span class="note-h-ico">🔎</span>La barra di ricerca geografica</h3>
+    <p>In basso trovi la barra di ricerca: digita il nome di una regione, provincia o comune per saltarci direttamente sopra. L'icona a imbuto apre i <b>filtri</b> a cascata (Regione → Provincia → Comune): scegli una regione per restringere l'elenco delle province, poi una provincia per restringere i comuni, e usa <b>↗ Zoom selezione</b> per inquadrare l'area scelta sulla mappa. Le stesse selezioni valgono sia per la vista Comuni sia per la vista Province.</p>
+
+    <figure class="note-fig">
+      <img src="img/guide/03-ricerca-filtri.png" alt="Screenshot: modale filtri geografici Regione, Provincia, Comune aperto sopra la mappa" loading="lazy">
+      <figcaption>Cerca per nome nella barra in basso, oppure apri i filtri con l'icona a imbuto: le due modalità aggiornano insieme mappa e classifica.</figcaption>
+    </figure>
+
+    <h3><span class="note-h-ico">🎨</span>La legenda è anche un filtro</h3>
+    <p>Nel pannello a destra, sotto ogni vista, la legenda a colori (es. "Molto basso… Molto alto") non è solo esplicativa: <b>clicca su una voce</b> per mostrare in mappa solo i comuni (o province) di quella classe, oscurando gli altri. Clicca di nuovo la stessa voce, oppure il link <b>× rimuovi filtro classe</b> che appare, per tornare a vedere tutti i valori.</p>
+
+    <figure class="note-fig note-fig-narrow">
+      <img src="img/guide/04-legenda-filtro.png" alt="Screenshot: voce 'Nella media' della legenda selezionata, con il link × rimuovi filtro classe" loading="lazy">
+      <figcaption>La voce cliccata ("Nella media" in questo esempio) resta evidenziata con un bordo, e appare il link "× rimuovi filtro classe".</figcaption>
+    </figure>
+
+    <figure class="note-fig">
+      <img src="img/guide/05-legenda-filtro-mappa.png" alt="Screenshot: mappa che mostra solo i comuni della classe 'Nella media' dopo il click sulla legenda" loading="lazy">
+      <figcaption>Effetto sulla mappa: solo i comuni della classe scelta restano visibili, tutti gli altri sono nascosti.</figcaption>
+    </figure>
+
+    </div>
 
     <div class="note-tab-content active" data-note-tab="metodologia">
 
