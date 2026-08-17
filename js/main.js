@@ -105,6 +105,7 @@ function popupComuni(props) {
     : '';
   return `
     <div class="pop-title">${props.comune} (${props.sigla_prov})</div>
+    <div class="pop-row"><span class="k">Regione</span><span class="v">${REGIONE_LABEL(props.regione)}</span></div>
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)}</span></div>
     <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)}</span></div>
     <div class="pop-row"><span class="k">Valore immobiliare (OMI)</span><span class="v">${fmtEuroMq(props.omi_eur_mq)}</span></div>
@@ -133,6 +134,7 @@ function popupBivariata(props) {
   const fg = textOnColor(bg);
   return `
     <div class="pop-title">${props.comune} (${props.sigla_prov})</div>
+    <div class="pop-row"><span class="k">Regione</span><span class="v">${REGIONE_LABEL(props.regione)}</span></div>
     <div class="pop-row"><span class="k">Classe bivariata</span><span class="v pop-badge" style="background:${bg};color:${fg}">reddito ${TERZILE_LABEL[props.terzile_reddito]} · costo vita ${TERZILE_LABEL[props.terzile_costo_vita]}</span></div>
     <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)} <i>(${TERZILE_LABEL[props.terzile_reddito]})</i></span></div>
     <div class="pop-row"><span class="k">Costo vita stimato (OMI)</span><span class="v">${fmtEuroMq(props.costo_vita_stimato)} <i>(${TERZILE_LABEL[props.terzile_costo_vita]})</i></span></div>
@@ -147,6 +149,7 @@ function popupProvince(props) {
     : '';
   return `
     <div class="pop-title">${props.provincia} (${props.sigla_prov})</div>
+    <div class="pop-row"><span class="k">Regione</span><span class="v">${REGIONE_LABEL(props.regione)}</span></div>
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale_prov)}</span></div>
     <div class="pop-row"><span class="k">Reddito medio provinciale</span><span class="v">${fmtEuro(props.reddito_medio_prov)}</span></div>
     <div class="pop-row"><span class="k">Indice NIC (2025=100)</span><span class="v">${props.nic_valore != null ? props.nic_valore.toFixed(1) : 'n.d.'}</span></div>
