@@ -1,0 +1,944 @@
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol('pmtiles', protocol.tile);
+
+// ── Tema chiaro/scuro: letto da localStorage prima di creare la mappa, così
+//    i tile CARTO giusti (dark_all/light_all) si caricano già al primo giro. ──
+const THEME_KEY = 'poteredacquisto-theme';
+let currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
+document.documentElement.setAttribute('data-theme', currentTheme);
+
+const CARTO_TILES = {
+  dark: ['a', 'b', 'c', 'd'].map(s => `https://${s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png`),
+  light: ['a', 'b', 'c', 'd'].map(s => `https://${s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png`)
+};
+const MAP_BG = { dark: '#0b0d12', light: '#e8e4d8' };
+
+const VIEWS = {
+  comuni: {
+    pmtiles: 'dist/geo/potere_acquisto_comuni.pmtiles',
+    sourceLayer: 'comuni_potere_acquisto',
+    idField: 'pro_com'
+  },
+  province: {
+    pmtiles: 'dist/geo/potere_acquisto_province.pmtiles',
+    sourceLayer: 'province_potere_acquisto',
+    idField: 'sigla_prov'
+  },
+  bivariata: {
+    pmtiles: 'dist/geo/potere_acquisto_bivariata.pmtiles',
+    sourceLayer: 'comuni_bivariata',
+    idField: 'pro_com',
+    bivariate: true
+  }
+};
+let currentView = 'comuni';
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: {
+    version: 8,
+    glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
+    sources: {
+      'carto-base': {
+        type: 'raster',
+        tiles: CARTO_TILES[currentTheme],
+        tileSize: 256,
+        maxzoom: 20,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      }
+    },
+    layers: [
+      { id: 'bg', type: 'background', paint: { 'background-color': MAP_BG[currentTheme] } },
+      { id: 'carto-base-layer', type: 'raster', source: 'carto-base' }
+    ]
+  },
+  center: [12.5, 42.5],
+  zoom: window.innerWidth <= 640 ? 4 : 5.2,
+  minZoom: 4,
+  maxZoom: 10,
+  maxBounds: [[-3.7, 32.9], [29.5, 50.5]],
+  attributionControl: false,
+  hash: true,
+  dragRotate: false,
+  pitchWithRotate: false,
+  touchPitch: false
+});
+map.touchZoomRotate.disableRotation();
+
+map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+requestAnimationFrame(() => {
+  document.querySelectorAll('.maplibregl-ctrl-attrib.maplibregl-compact-show')
+    .forEach(el => el.classList.remove('maplibregl-compact-show'));
+});
+
+const COLOR_EXPR = [
+  'match', ['get', 'classe_potere_acquisto'],
+  1, '#c94f4f',
+  2, '#d99a55',
+  3, '#c9bd8a',
+  4, '#7fac86',
+  5, '#3f8f6b',
+  '#5a6472'
+];
+
+// Palette bivariata (terzile reddito x terzile costo vita), schema Stevens.
+const BIVAR_COLOR_EXPR = [
+  'match', ['get', 'bivar_class'],
+  '11', '#e8e8e8', '21', '#e4acac', '31', '#c85a5a',
+  '12', '#b0d5df', '22', '#ad9ea5', '32', '#985356',
+  '13', '#64acbe', '23', '#627f8c', '33', '#574249',
+  '#5a6472'
+];
+
+const fmtEuro = (v) => v == null ? 'n.d.' : Math.round(v).toLocaleString('it-IT') + ' €';
+const fmtEuroMq = (v) => v == null ? 'n.d.' : Math.round(v).toLocaleString('it-IT') + ' €/m²';
+
+const FONTE_LABEL_COMUNI = {
+  omi_diretto: 'OMI diretto del comune',
+  media_provincia: 'Media OMI di provincia (fallback)',
+  media_nazionale: 'Media OMI nazionale (fallback)'
+};
+
+function popupComuni(props) {
+  const fonteWarn = props.fonte_costo_vita !== 'omi_diretto'
+    ? `<div class="pop-warn">⚠ Nessuna quotazione OMI diretta per questo comune: usata la ${props.fonte_costo_vita === 'media_provincia' ? 'media provinciale' : 'media nazionale'}.</div>`
+    : '';
+  return `
+    <div class="pop-title">${props.comune} (${props.sigla_prov})</div>
+    <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)}</span></div>
+    <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)}</span></div>
+    <div class="pop-row"><span class="k">Valore immobiliare (OMI)</span><span class="v">${fmtEuroMq(props.omi_eur_mq)}</span></div>
+    <div class="pop-row"><span class="k">Fonte costo vita</span><span class="v">${FONTE_LABEL_COMUNI[props.fonte_costo_vita] || props.fonte_costo_vita}</span></div>
+    <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    ${fonteWarn}
+  `;
+}
+
+const TERZILE_LABEL = ['', 'basso', 'medio', 'alto'];
+const BIVAR_COLOR_MAP = {
+  '11': '#e8e8e8', '21': '#e4acac', '31': '#c85a5a',
+  '12': '#b0d5df', '22': '#ad9ea5', '32': '#985356',
+  '13': '#64acbe', '23': '#627f8c', '33': '#574249'
+};
+
+function textOnColor(hex) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luma > 0.55 ? '#1a1d23' : '#f2f4f7';
+}
+
+function popupBivariata(props) {
+  const cls = props.bivar_class;
+  const bg = BIVAR_COLOR_MAP[cls] || '#5a6472';
+  const fg = textOnColor(bg);
+  return `
+    <div class="pop-title">${props.comune} (${props.sigla_prov})</div>
+    <div class="pop-row"><span class="k">Classe bivariata</span><span class="v pop-badge" style="background:${bg};color:${fg}">reddito ${TERZILE_LABEL[props.terzile_reddito]} · costo vita ${TERZILE_LABEL[props.terzile_costo_vita]}</span></div>
+    <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)} <i>(${TERZILE_LABEL[props.terzile_reddito]})</i></span></div>
+    <div class="pop-row"><span class="k">Costo vita stimato (OMI)</span><span class="v">${fmtEuroMq(props.costo_vita_stimato)} <i>(${TERZILE_LABEL[props.terzile_costo_vita]})</i></span></div>
+    <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)}</span></div>
+    <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
+  `;
+}
+
+function popupProvince(props) {
+  const ndWarn = props.nic_valore == null
+    ? `<div class="pop-warn">⚠ Nessuna rilevazione NIC diretta in questa provincia: potere d'acquisto non calcolabile con dato reale.</div>`
+    : '';
+  return `
+    <div class="pop-title">${props.provincia} (${props.sigla_prov})</div>
+    <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale_prov)}</span></div>
+    <div class="pop-row"><span class="k">Reddito medio provinciale</span><span class="v">${fmtEuro(props.reddito_medio_prov)}</span></div>
+    <div class="pop-row"><span class="k">Indice NIC (2025=100)</span><span class="v">${props.nic_valore != null ? props.nic_valore.toFixed(1) : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti_prov != null ? props.n_contribuenti_prov.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    ${ndWarn}
+  `;
+}
+
+let hoveredId = null;
+
+function addViewLayers(view) {
+  const cfg = VIEWS[view];
+  const srcId = `src-${view}`;
+  const fillId = `${view}-fill`;
+  const lineId = `${view}-line`;
+  const hoverId = `${view}-hover-line`;
+
+  map.addSource(srcId, { type: 'vector', url: `pmtiles://${cfg.pmtiles}` });
+
+  const fillColor = cfg.bivariate
+    ? BIVAR_COLOR_EXPR
+    : view === 'province'
+      ? ['case', ['==', ['get', 'nic_valore'], null], '#5a6472', COLOR_EXPR]
+      : COLOR_EXPR;
+
+  const active = view === currentView;
+
+  map.addLayer({
+    id: fillId, type: 'fill', source: srcId, 'source-layer': cfg.sourceLayer,
+    paint: {
+      'fill-color': fillColor,
+      'fill-opacity': active ? 0.82 : 0,
+      'fill-opacity-transition': { duration: 260 }
+    }
+  });
+  map.addLayer({
+    id: lineId, type: 'line', source: srcId, 'source-layer': cfg.sourceLayer,
+    paint: {
+      'line-color': 'rgba(11,13,18,0.55)',
+      'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.1, 9, 0.6],
+      'line-opacity': active ? 1 : 0,
+      'line-opacity-transition': { duration: 260 }
+    }
+  });
+  map.addLayer({
+    id: hoverId, type: 'line', source: srcId, 'source-layer': cfg.sourceLayer,
+    paint: { 'line-color': '#ffffff', 'line-width': 1.6, 'line-opacity': active ? 1 : 0 },
+    filter: ['==', ['get', cfg.idField], '']
+  });
+
+  map.on('mousemove', fillId, (e) => {
+    if (view !== currentView) return;
+    map.getCanvas().style.cursor = 'pointer';
+    if (e.features.length) {
+      const id = e.features[0].properties[cfg.idField];
+      if (id !== hoveredId) {
+        hoveredId = id;
+        map.setFilter(hoverId, ['==', ['get', cfg.idField], id]);
+      }
+    }
+  });
+  map.on('mouseleave', fillId, () => {
+    if (view !== currentView) return;
+    map.getCanvas().style.cursor = '';
+    hoveredId = null;
+    map.setFilter(hoverId, ['==', ['get', cfg.idField], '']);
+  });
+  map.on('click', fillId, (e) => {
+    if (view !== currentView) return;
+    const props = e.features[0].properties;
+    const html = cfg.bivariate ? popupBivariata(props) : (view === 'comuni' ? popupComuni(props) : popupProvince(props));
+    new maplibregl.Popup({ closeButton: true, maxWidth: '300px' })
+      .setLngLat(e.lngLat).setHTML(html).addTo(map);
+  });
+}
+
+map.on('load', () => {
+  addViewLayers('comuni');
+  addViewLayers('province');
+  addViewLayers('bivariata');
+  document.getElementById('map-loader').style.display = 'none';
+});
+
+function switchView(view) {
+  if (view === currentView) return;
+  currentView = view;
+  for (const v of Object.keys(VIEWS)) {
+    const isActive = v === view;
+    map.setPaintProperty(`${v}-fill`, 'fill-opacity', isActive ? 0.82 : 0);
+    map.setPaintProperty(`${v}-line`, 'line-opacity', isActive ? 1 : 0);
+    map.setPaintProperty(`${v}-hover-line`, 'line-opacity', isActive ? 1 : 0);
+    if (!isActive) map.setFilter(`${v}-hover-line`, ['==', ['get', VIEWS[v].idField], '']);
+  }
+  document.querySelectorAll('#dial-items [data-view]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+  setActiveTab(view);
+}
+
+/* ── Pannello dx: tab Comuni/Province/Bivariata, sempre sincronizzato con
+   la vista mappa attiva. Su desktop apribile/richiudibile con la linguetta
+   (aperto di default); su mobile la linguetta è disattivata — si apre da
+   solo a ogni cambio vista e si chiude con la ✕. ── */
+const sidePanel = document.getElementById('side-panel');
+function openSidePanel() { sidePanel.classList.remove('closed'); document.body.classList.add('side-panel-open'); syncMapWithPanel(); }
+function closeSidePanel() { sidePanel.classList.add('closed'); document.body.classList.remove('side-panel-open'); syncMapWithPanel(); }
+window.innerWidth <= 640 ? closeSidePanel() : openSidePanel();
+
+/* Il pannello dx è in overlay (position:fixed) sopra la mappa: il canvas
+   resta a piena larghezza, ma la fetta coperta dal pannello non è visibile
+   all'utente. Va quindi esclusa da tutto ciò che legge "cosa si vede sulla
+   mappa" (classifiche "solo quest'area"), altrimenti includerebbero comuni
+   nascosti sotto il pannello. syncMapWithPanel ricalcola quel bordo a ogni
+   apertura/chiusura, dopo la transizione CSS (.28s). */
+function panelPixelWidth() {
+  if (window.innerWidth <= 640) return 0; // su mobile il pannello copre tutto, non scosta il bordo
+  return sidePanel.classList.contains('closed') ? 0 : sidePanel.offsetWidth;
+}
+function syncMapWithPanel() {
+  map.setPadding({ top: 0, bottom: 0, left: 0, right: panelPixelWidth() });
+  setTimeout(() => {
+    map.resize();
+    const scope = currentView;
+    if (RANKING_STATE[scope] && RANKING_STATE[scope].viewport) renderRankingScope(scope);
+  }, 300);
+}
+
+function setActiveTab(view) {
+  document.querySelectorAll('.tab-hdr').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.dataset.tab === view));
+  if (window.innerWidth <= 640) openSidePanel();
+}
+document.querySelectorAll('.tab-hdr').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.view === 'capoluoghi') { setActiveTab('capoluoghi'); return; }
+    switchView(btn.dataset.view);
+  });
+});
+document.getElementById('panel-toggle').addEventListener('click', () => {
+  sidePanel.classList.contains('closed') ? openSidePanel() : closeSidePanel();
+});
+document.getElementById('panel-close-mobile').addEventListener('click', closeSidePanel);
+
+/* ── Logo + attribution: seguono in sincro l'apertura di qualsiasi pannello/modale ── */
+let openPanelCount = 0;
+function panelOpened() { openPanelCount++; document.body.classList.add('panel-open'); }
+function panelClosed() { openPanelCount = Math.max(0, openPanelCount - 1); if (openPanelCount === 0) document.body.classList.remove('panel-open'); }
+
+const noteOverlay = document.getElementById('note-overlay');
+function openNote() { noteOverlay.classList.add('open'); panelOpened(); }
+function closeNote() { if (!noteOverlay.classList.contains('open')) return; noteOverlay.classList.remove('open'); panelClosed(); }
+document.getElementById('note-close').addEventListener('click', closeNote);
+noteOverlay.addEventListener('click', (e) => { if (e.target === noteOverlay) closeNote(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNote(); });
+
+const noteScroll = document.getElementById('note-scroll');
+const noteTop = document.getElementById('note-top');
+document.querySelectorAll('.note-tab-hdr').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.noteTab;
+    document.querySelectorAll('.note-tab-hdr').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.note-tab-content').forEach(c => c.classList.toggle('active', c.dataset.noteTab === tab));
+    noteScroll.scrollTop = 0;
+  });
+});
+noteScroll.addEventListener('scroll', () => {
+  const past = noteScroll.scrollTop > 200;
+  noteTop.classList.toggle('show', past);
+  requestAnimationFrame(() => noteTop.classList.toggle('visible', past));
+});
+noteTop.addEventListener('click', () => noteScroll.scrollTo({ top: 0, behavior: 'smooth' }));
+
+/* ── Classifiche: una per tab (Comuni/Province/Bivariata), incorporate nel
+   pannello dx. "scope" = tab/vista mappa (comuni|province|bivariata);
+   "unit" = livello del dato classificato (comuni|province|regioni) — il tab
+   Province ha unit fissa "province", i tab Comuni/Bivariata offrono anche
+   il sotto-livello "regioni" tramite i pillola .ranking-subtab. ── */
+const RANKING_UNIT_LABEL = { comuni: 'comuni', province: 'province', regioni: 'regioni' };
+let RANKINGS = null;
+const RANKING_STATE = {
+  comuni:    { unit: 'comuni',   viewport: false },
+  province:  { unit: 'province', viewport: false },
+  bivariata: { unit: 'comuni',   viewport: false }
+};
+
+function fmtRankVal(r) {
+  return Math.round(r.valore).toLocaleString('it-IT') + ' €';
+}
+
+/* Le classifiche seguono il filtro geografico attivo (stesso geoState della
+   mappa): provincia selezionata ha precedenza su regione, come nel filtro mappa. */
+function filterRankingRows(rows, unit, viewport) {
+  let out = rows;
+  if (geoState.provincia) {
+    out = unit === 'regioni' ? out.filter(r => r.nome === geoState.regione) : out.filter(r => r.prov === geoState.provincia);
+  } else if (geoState.regione) {
+    out = unit === 'regioni' ? out.filter(r => r.nome === geoState.regione) : out.filter(r => r.regione === geoState.regione);
+  }
+  if (viewport) out = filterByViewport(out, unit);
+  return out;
+}
+
+/* Tab Bivariata: la selezione di una classe nella legenda (geoState.bivarClass)
+   filtra anche la classifica, non solo la mappa — restringe l'elenco ai comuni
+   di quella cella (es. reddito medio · costo vita alto = "23", caso Palermo). */
+const BIVAR_CLASS_LABEL = {
+  '11': 'reddito basso · costo vita basso', '21': 'reddito medio · costo vita basso', '31': 'reddito alto · costo vita basso',
+  '12': 'reddito basso · costo vita medio', '22': 'reddito medio · costo vita medio', '32': 'reddito alto · costo vita medio',
+  '13': 'reddito basso · costo vita alto', '23': 'reddito medio · costo vita alto', '33': 'reddito alto · costo vita alto'
+};
+
+/* "Solo quest'area": interroga i layer renderizzati nel viewport corrente
+   (map.queryRenderedFeatures senza geometria = intero canvas visibile) e
+   incrocia gli id con le righe della classifica. Funziona anche se il layer
+   della vista attiva ha fill-opacity 0 (i comuni sono comunque nei tile). */
+function viewportIdSet(layerId, idField) {
+  if (!map.getLayer(layerId)) return null;
+  const pw = panelPixelWidth();
+  const canvas = map.getCanvas();
+  const bbox = pw > 0 ? [[0, 0], [canvas.clientWidth - pw, canvas.clientHeight]] : undefined;
+  const feats = bbox ? map.queryRenderedFeatures(bbox, { layers: [layerId] }) : map.queryRenderedFeatures({ layers: [layerId] });
+  const s = new Set();
+  feats.forEach(f => s.add(f.properties[idField]));
+  return s;
+}
+
+function filterByViewport(rows, unit) {
+  if (unit === 'province') {
+    const ids = viewportIdSet('province-fill', 'sigla_prov');
+    return ids ? rows.filter(r => ids.has(r.prov)) : rows;
+  }
+  if (unit === 'regioni') {
+    const ids = viewportIdSet('comuni-fill', 'regione');
+    return ids ? rows.filter(r => ids.has(r.nome)) : rows;
+  }
+  const ids = viewportIdSet('comuni-fill', 'pro_com');
+  return ids ? rows.filter(r => ids.has(r.pro_com)) : rows;
+}
+
+function topBottom(rows, n = 10) {
+  const sorted = [...rows].sort((a, b) => b.valore - a.valore);
+  return { top: sorted.slice(0, n), bottom: sorted.slice(-n).reverse() };
+}
+
+function rankingScopeLabel(viewport) {
+  let s = '';
+  if (geoState.provincia) s = ` in provincia di ${provinceOf(geoState.regione)[geoState.provincia]?.nome || geoState.provincia}`;
+  else if (geoState.regione) s = ` in ${REGIONE_LABEL(geoState.regione)}`;
+  if (viewport) s += s ? ', nell’area visualizzata' : ' nell’area visualizzata sulla mappa';
+  return s;
+}
+
+function findRegioneOfProvincia(sigla) {
+  if (!HIERARCHY) return '';
+  for (const [reg, rData] of Object.entries(HIERARCHY.regioni)) {
+    if (rData.province[sigla]) return reg;
+  }
+  return '';
+}
+
+function selectFromRanking(r, unit, scope) {
+  if (unit === 'comuni') {
+    fRegione.value = r.regione; geoState.regione = r.regione; populateProvince(r.regione);
+    fProvincia.value = r.prov; geoState.provincia = r.prov; populateComuni(r.regione, r.prov);
+    const proCom = String(parseInt(r.pro_com, 10));
+    fComune.value = proCom; geoState.comune = proCom; geoState.comuneProvincia = r.prov;
+    geoState.comuneNome = r.nome;
+  } else if (unit === 'province') {
+    const reg = findRegioneOfProvincia(r.prov);
+    fRegione.value = reg; geoState.regione = reg; populateProvince(reg);
+    fProvincia.value = r.prov; geoState.provincia = r.prov; populateComuni(reg, r.prov);
+    geoState.comune = '';
+  } else {
+    fRegione.value = r.nome; geoState.regione = r.nome; populateProvince(r.nome);
+    geoState.provincia = ''; geoState.comune = '';
+  }
+  if (currentView !== scope) switchView(scope);
+  setActiveTab(scope);
+  applyGeoFilters(); updateGeoChips();
+}
+
+function renderRankingList(el, rows, minVal, maxVal, unit, scope) {
+  const span = maxVal - minVal || 1;
+  el.innerHTML = rows.map((r, i) => {
+    const pct = Math.max(6, Math.round(((r.valore - minVal) / span) * 100));
+    /* r.rank, se presente, è la vera posizione nella classifica completa
+       (non l'indice nell'elenco filtrato) — es. la ricerca capoluoghi mostra
+       "45" per Palermo anche quando è l'unico risultato visibile, non "1". */
+    const counterStyle = r.rank ? ` style="counter-reset:rank ${r.rank - 1}"` : '';
+    return `
+    <li class="ranking-item" data-idx="${i}"${counterStyle} tabindex="0" role="button">
+      <span class="rk-name" title="${esc(r.nome)}${r.prov ? ' (' + esc(r.prov) + ')' : ''}">${esc(r.nome)}${r.prov ? ' <span class="rk-prov">' + esc(r.prov) + '</span>' : ''}</span>
+      <span class="rk-bar-track"><span class="rk-bar-fill" style="width:${pct}%"></span></span>
+      <span class="rk-val">${fmtRankVal(r)}</span>
+    </li>`;
+  }).join('');
+  el.querySelectorAll('.ranking-item').forEach((li, i) => {
+    const go = () => selectFromRanking(rows[i], unit, scope);
+    li.addEventListener('click', go);
+    li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+}
+
+/* Ordine di lettura della griglia bivariata: righe costo vita alta→bassa,
+   colonne reddito bassa→alta (stesso layout visivo della legenda). */
+const BIVAR_ORDER = ['13', '23', '33', '12', '22', '32', '11', '21', '31'];
+
+function renderBivarAccordion() {
+  const st = RANKING_STATE.bivariata;
+  const container = document.getElementById('bivar-class-accordion');
+  if (!container) return;
+  const rows = filterRankingRows(RANKINGS.comuni, 'comuni', st.viewport);
+  const byClass = {};
+  rows.forEach(r => { if (!r.bivar_class) return; (byClass[r.bivar_class] = byClass[r.bivar_class] || []).push(r); });
+  Object.values(byClass).forEach(list => list.sort((a, b) => b.valore - a.valore));
+
+  container.innerHTML = BIVAR_ORDER.map(cls => {
+    const list = byClass[cls] || [];
+    const top10 = list.slice(0, 10);
+    const bg = BIVAR_COLOR_MAP[cls] || '#5a6472';
+    const itemsHtml = top10.length
+      ? top10.map((r, i) => `
+        <li class="ranking-item bivar-acc-item" data-cls="${cls}" data-idx="${i}" tabindex="0" role="button">
+          <span class="rk-name" title="${esc(r.nome)} (${esc(r.prov)})">${esc(r.nome)} <span class="rk-prov">${esc(r.prov)}</span></span>
+          <span class="rk-val">${fmtRankVal(r)}</span>
+        </li>`).join('')
+      : '<li class="ranking-empty">Nessun comune in questa classe.</li>';
+    return `
+      <details class="bivar-acc" data-cls="${cls}">
+        <summary><span class="bivar-acc-swatch" style="background:${bg}"></span>${esc(BIVAR_CLASS_LABEL[cls])} <span class="bivar-acc-count">${list.length}</span></summary>
+        <ol class="ranking-list bivar-acc-list">${itemsHtml}</ol>
+      </details>`;
+  }).join('');
+
+  container.querySelectorAll('.bivar-acc-item').forEach(li => {
+    const cls = li.dataset.cls;
+    const r = (byClass[cls] || [])[+li.dataset.idx];
+    const go = () => selectFromRanking(r, 'comuni', 'bivariata');
+    li.addEventListener('click', go);
+    li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+}
+
+function renderRankingScope(scope) {
+  if (!RANKINGS) return;
+  if (scope === 'bivariata') { renderBivarAccordion(); return; }
+  const st = RANKING_STATE[scope];
+  const unit = st.unit;
+  const subtitleEl = document.querySelector(`.ranking-subtitle[data-scope="${scope}"]`);
+  const topEl = document.querySelector(`.ranking-list.ranking-top[data-scope="${scope}"]`);
+  const bottomEl = document.querySelector(`.ranking-list.ranking-bottom[data-scope="${scope}"]`);
+  const noteEl = document.querySelector(`.ranking-note[data-scope="${scope}"]`);
+
+  const rows = filterRankingRows(RANKINGS[unit], unit, st.viewport);
+  if (rows.length === 0) {
+    topEl.innerHTML = ''; bottomEl.innerHTML = '';
+    subtitleEl.textContent = `Nessun dato disponibile${rankingScopeLabel(st.viewport)} per questa classifica.`;
+    noteEl.textContent = '';
+    return;
+  }
+  const data = topBottom(rows);
+  const allVals = rows.map(r => r.valore);
+  const minVal = Math.min(...allVals), maxVal = Math.max(...allVals);
+  renderRankingList(topEl, data.top, minVal, maxVal, unit, scope);
+  renderRankingList(bottomEl, data.bottom, minVal, maxVal, unit, scope);
+  const n = Math.min(10, rows.length);
+  subtitleEl.textContent = `I ${n} ${RANKING_UNIT_LABEL[unit]} dove si vive meglio e peggio${rankingScopeLabel(st.viewport)}, per potere d'acquisto reale`;
+  noteEl.textContent = unit === 'comuni'
+    ? `Solo comuni con almeno ${RANKINGS.min_contribuenti.toLocaleString('it-IT')} contribuenti, per evitare medie statisticamente rumorose sui centri molto piccoli.`
+    : unit === 'province'
+      ? 'Solo le province con rilevazione NIC Istat diretta (77 su 107).'
+      : 'Media pesata sui contribuenti dei comuni di ciascuna regione (stessa soglia della vista Comuni).';
+}
+
+/* Ricerca "intelligente": ignora maiuscole/accenti e cerca sia sul nome
+   del comune sia sulla sigla/nome provincia, cosi' "Milano", "milano" o
+   "MI" trovano tutti Milano. */
+const normSearch = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+let capoluoghiSearchTerm = '';
+
+function renderCapoluoghi() {
+  if (!RANKINGS || !RANKINGS.capoluoghi) return;
+  const el = document.querySelector('.ranking-list.ranking-general[data-scope="capoluoghi"]');
+  const countEl = document.getElementById('capoluoghi-search-count');
+  if (!el) return;
+  /* RANKINGS.capoluoghi è già ordinato per valore desc (query SQL a monte):
+     la posizione vera è l'indice nell'elenco completo, assegnata una sola
+     volta cosi' resta stabile anche quando la ricerca filtra l'elenco. */
+  if (!RANKINGS.capoluoghi[0] || RANKINGS.capoluoghi[0].rank === undefined) {
+    RANKINGS.capoluoghi.forEach((r, i) => { r.rank = i + 1; });
+  }
+  let rows = RANKINGS.capoluoghi;
+  const term = normSearch(capoluoghiSearchTerm);
+  if (term) {
+    rows = rows.filter(r => normSearch(r.nome).includes(term) || normSearch(r.prov).includes(term));
+  }
+  if (countEl) countEl.textContent = term ? `${rows.length}/${RANKINGS.capoluoghi.length}` : '';
+  if (rows.length === 0) { el.innerHTML = '<li class="ranking-empty">Nessun capoluogo trovato.</li>'; return; }
+  const allVals = rows.map(r => r.valore);
+  renderRankingList(el, rows, Math.min(...allVals), Math.max(...allVals), 'comuni', 'comuni');
+}
+
+const capoluoghiSearchInput = document.getElementById('capoluoghi-search');
+if (capoluoghiSearchInput) {
+  capoluoghiSearchInput.addEventListener('input', () => {
+    capoluoghiSearchTerm = capoluoghiSearchInput.value;
+    renderCapoluoghi();
+  });
+}
+
+function renderAllRankings() {
+  Object.keys(RANKING_STATE).forEach(renderRankingScope);
+  renderCapoluoghi();
+}
+
+document.querySelectorAll('.ranking-subtabs').forEach(group => {
+  const scope = group.dataset.scope;
+  group.querySelectorAll('.ranking-subtab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      RANKING_STATE[scope].unit = btn.dataset.unit;
+      group.querySelectorAll('.ranking-subtab').forEach(b => b.classList.toggle('active', b === btn));
+      renderRankingScope(scope);
+    });
+  });
+});
+
+document.querySelectorAll('.ranking-viewport-toggle').forEach(btn => {
+  const scope = btn.dataset.scope;
+  btn.addEventListener('click', () => {
+    RANKING_STATE[scope].viewport = !RANKING_STATE[scope].viewport;
+    btn.setAttribute('aria-pressed', String(RANKING_STATE[scope].viewport));
+    renderRankingScope(scope);
+  });
+});
+
+let viewportRankingRAF = null;
+map.on('move', () => {
+  const scope = currentView;
+  if (!RANKING_STATE[scope].viewport) return;
+  if (viewportRankingRAF) return;
+  viewportRankingRAF = requestAnimationFrame(() => { viewportRankingRAF = null; renderRankingScope(scope); });
+});
+
+fetch('dist/geo/rankings.json?v=12').then(r => r.json()).then(d => { RANKINGS = d; renderAllRankings(); });
+
+/* ── Menu speed-dial (home / info / viste) ── */
+function setTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_KEY, theme);
+  const src = map.getSource('carto-base');
+  if (src) src.setTiles(CARTO_TILES[theme]);
+  if (map.getLayer('bg')) map.setPaintProperty('bg', 'background-color', MAP_BG[theme]);
+}
+
+const dialFab = document.getElementById('dial-fab');
+const dialItems = document.getElementById('dial-items');
+function closeDial() { dialFab.classList.remove('open'); dialItems.classList.remove('open'); dialFab.setAttribute('aria-expanded', 'false'); }
+dialFab.addEventListener('click', () => {
+  const open = dialItems.classList.toggle('open');
+  dialFab.classList.toggle('open', open);
+  dialFab.setAttribute('aria-expanded', String(open));
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#view-dial')) closeDial();
+});
+dialItems.querySelectorAll('.dial-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.action === 'home') {
+      map.flyTo({ center: MAP_HOME.center, zoom: MAP_HOME.zoom, duration: 800 });
+    } else if (btn.dataset.action === 'info') {
+      openNote();
+    } else if (btn.dataset.action === 'ranking') {
+      openSidePanel();
+    } else if (btn.dataset.action === 'theme') {
+      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    } else if (btn.dataset.view) {
+      switchView(btn.dataset.view);
+    }
+    closeDial();
+  });
+});
+
+/* ── Filtro geografico interconnesso: Regione → Provincia → Comune ─────
+   Le stesse selezioni filtrano entrambe le viste (Comuni/Province), a
+   scala diversa: la vista Comuni usa regione/sigla_prov/pro_com sulle
+   feature; la vista Province ha solo sigla_prov, quindi una Regione
+   selezionata diventa un filtro "in" sull'elenco delle sue province. */
+let HIERARCHY = null; // { regioni: {...}, comuni_bbox: {...} }
+const geoState = { regione: '', provincia: '', comune: '', comuneNome: '', comuneProvincia: '', bivarClass: '', classComuni: '', classProvince: '' };
+
+/* Legenda comuni/province: righe cliccabili che filtrano la mappa e le
+   classifiche per classe di potere d'acquisto (1-5), combinandosi (AND) con
+   il filtro geografico regione/provincia/comune già attivo — stesso pattern
+   della legenda bivariata. */
+function setClassFilter(view, cls) {
+  const key = view === 'comuni' ? 'classComuni' : 'classProvince';
+  geoState[key] = geoState[key] === cls ? '' : cls;
+  const legend = document.querySelector(`.legend-filter[data-legend-view="${view}"]`);
+  legend.querySelectorAll('.row[data-class]').forEach(r => r.classList.toggle('active', r.dataset.class === geoState[key]));
+  legend.querySelector('.legend-clear').style.display = geoState[key] ? 'block' : 'none';
+  applyGeoFilters();
+}
+document.querySelectorAll('.legend-filter .row[data-class]').forEach(el => {
+  const view = el.closest('.legend-filter').dataset.legendView;
+  el.addEventListener('click', () => setClassFilter(view, el.dataset.class));
+});
+document.querySelectorAll('.legend-clear').forEach(btn => {
+  btn.addEventListener('click', () => setClassFilter(btn.dataset.legendClear, ''));
+});
+
+const bivarHover = document.getElementById('bivar-hover');
+const bivarClearBtn = document.getElementById('bivar-clear');
+function setBivarClass(cls) {
+  geoState.bivarClass = geoState.bivarClass === cls ? '' : cls;
+  document.querySelectorAll('.bivar-grid .bs').forEach(b => b.classList.toggle('active', b.dataset.class === geoState.bivarClass));
+  bivarClearBtn.style.display = geoState.bivarClass ? 'block' : 'none';
+  applyGeoFilters();
+}
+document.querySelectorAll('.bivar-grid .bs').forEach(el => {
+  el.addEventListener('mouseenter', () => { bivarHover.textContent = el.title; });
+  el.addEventListener('mouseleave', () => { bivarHover.textContent = ''; });
+  el.addEventListener('click', () => setBivarClass(el.dataset.class));
+});
+bivarClearBtn.addEventListener('click', () => {
+  geoState.bivarClass = '';
+  document.querySelectorAll('.bivar-grid .bs').forEach(b => b.classList.remove('active'));
+  bivarClearBtn.style.display = 'none';
+  applyGeoFilters();
+});
+
+const fRegione   = document.getElementById('f-regione');
+const fProvincia = document.getElementById('f-provincia');
+const fComune    = document.getElementById('f-comune');
+const geoBtnZoom = document.getElementById('geo-btn-zoom');
+
+function regioniList() { return HIERARCHY ? Object.keys(HIERARCHY.regioni).sort() : []; }
+function provinceOf(regione) { return HIERARCHY && regione ? HIERARCHY.regioni[regione].province : {}; }
+function comuniOf(regione, sigla) {
+  const p = provinceOf(regione)[sigla];
+  return p ? p.comuni : [];
+}
+
+function populateProvince(regione) {
+  fProvincia.innerHTML = '<option value="">— Tutte —</option>';
+  fComune.innerHTML = '<option value="">— Tutti —</option>';
+  fProvincia.disabled = !regione;
+  fComune.disabled = true;
+  if (!regione) return;
+  Object.entries(provinceOf(regione)).sort((a, b) => a[1].nome.localeCompare(b[1].nome)).forEach(([sigla, p]) => {
+    const o = document.createElement('option');
+    o.value = sigla; o.textContent = p.nome;
+    fProvincia.appendChild(o);
+  });
+}
+
+function populateComuni(regione, sigla) {
+  fComune.innerHTML = '<option value="">— Tutti —</option>';
+  fComune.disabled = !sigla;
+  if (!regione || !sigla) return;
+  comuniOf(regione, sigla).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.c; o.textContent = c.n;
+    fComune.appendChild(o);
+  });
+}
+
+fRegione.addEventListener('change', () => {
+  geoState.regione = fRegione.value; geoState.provincia = ''; geoState.comune = ''; geoState.comuneProvincia = '';
+  populateProvince(fRegione.value);
+  applyGeoFilters(); updateGeoChips();
+});
+fProvincia.addEventListener('change', () => {
+  geoState.provincia = fProvincia.value; geoState.comune = ''; geoState.comuneProvincia = '';
+  populateComuni(geoState.regione, fProvincia.value);
+  applyGeoFilters(); updateGeoChips();
+});
+fComune.addEventListener('change', () => {
+  geoState.comune = fComune.value;
+  geoState.comuneProvincia = fComune.value ? geoState.provincia : '';
+  const opt = fComune.selectedOptions[0];
+  geoState.comuneNome = opt ? opt.textContent : '';
+  applyGeoFilters(); updateGeoChips();
+});
+
+function geoConditionsForView(view) {
+  const c = [];
+  if (view === 'comuni' || view === 'bivariata') {
+    if (geoState.regione) c.push(['==', ['get', 'regione'], geoState.regione]);
+    if (geoState.provincia) c.push(['==', ['get', 'sigla_prov'], geoState.provincia]);
+    if (geoState.comune) c.push(['==', ['get', 'pro_com'], String(geoState.comune).padStart(6, '0')]);
+    if (view === 'bivariata' && geoState.bivarClass) c.push(['==', ['get', 'bivar_class'], geoState.bivarClass]);
+    if (view === 'comuni' && geoState.classComuni) c.push(['==', ['get', 'classe_potere_acquisto'], +geoState.classComuni]);
+  } else {
+    if (geoState.provincia) {
+      c.push(['==', ['get', 'sigla_prov'], geoState.provincia]);
+    } else if (geoState.regione) {
+      const provs = Object.keys(provinceOf(geoState.regione));
+      c.push(['in', ['get', 'sigla_prov'], ['literal', provs]]);
+    }
+    if (geoState.classProvince) c.push(['==', ['get', 'classe_potere_acquisto'], +geoState.classProvince]);
+  }
+  return c;
+}
+
+function mkGeoFilter(conds) {
+  if (conds.length === 0) return null;
+  if (conds.length === 1) return conds[0];
+  return ['all', ...conds];
+}
+
+const MAP_HOME = { center: [12.5, 42.5], zoom: 5.2 };
+
+function bboxOf() {
+  if (geoState.comune) return HIERARCHY.comuni_bbox[String(geoState.comune)];
+  if (geoState.provincia) return provinceOf(geoState.regione)[geoState.provincia]?.bbox;
+  if (geoState.regione) return HIERARCHY.regioni[geoState.regione]?.bbox;
+  return null;
+}
+
+function zoomToSelection() {
+  const b = bboxOf();
+  if (b) {
+    map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 60, duration: 700 });
+  } else {
+    map.flyTo({ center: MAP_HOME.center, zoom: MAP_HOME.zoom, duration: 700 });
+  }
+}
+
+function applyGeoFilters() {
+  for (const view of Object.keys(VIEWS)) {
+    const fillId = `${view}-fill`;
+    if (!map.getLayer(fillId)) continue;
+    const f = mkGeoFilter(geoConditionsForView(view));
+    map.setFilter(fillId, f);
+    map.setFilter(`${view}-line`, f);
+  }
+  const hasSel = !!(geoState.regione || geoState.provincia || geoState.comune);
+  geoBtnZoom.disabled = !hasSel;
+  zoomToSelection();
+  if (RANKINGS) renderAllRankings();
+}
+
+geoBtnZoom.addEventListener('click', zoomToSelection);
+
+const REGIONE_LABEL = r => r.replace(/\(P\.A\.(.+)\)/, ' — P.A. $1');
+
+function updateGeoChips() {
+  const chipsEl = document.getElementById('geo-chips');
+  const filterBtn = document.getElementById('geo-filter-btn');
+  const filterBadge = document.getElementById('geo-filter-badge');
+  const active = [];
+  if (geoState.regione) active.push({ label: REGIONE_LABEL(geoState.regione), clear: 'regione' });
+  if (geoState.provincia) active.push({ label: provinceOf(geoState.regione)[geoState.provincia]?.nome || geoState.provincia, clear: 'provincia' });
+  if (geoState.comune) active.push({ label: geoState.comuneNome, clear: 'comune' });
+
+  chipsEl.style.display = active.length ? 'flex' : 'none';
+  filterBadge.style.display = active.length ? 'flex' : 'none';
+  filterBadge.textContent = active.length;
+  filterBtn.classList.toggle('active', active.length > 0);
+
+  let html = active.map(f => `
+    <span class="geo-chip">${f.label}<button class="geo-chip-close" data-clear="${f.clear}">✕</button></span>
+  `).join('');
+  if (active.length > 1) html += `<button class="geo-chip geo-chip-resetall" id="geo-chips-resetall">✕ tutti</button>`;
+  chipsEl.innerHTML = html;
+
+  chipsEl.querySelectorAll('.geo-chip-close').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const c = btn.dataset.clear;
+      if (c === 'regione') { fRegione.value = ''; geoState.regione = ''; populateProvince(''); geoState.provincia = ''; geoState.comune = ''; }
+      if (c === 'provincia') { fProvincia.value = ''; geoState.provincia = ''; populateComuni(geoState.regione, ''); geoState.comune = ''; }
+      if (c === 'comune') { fComune.value = ''; geoState.comune = ''; geoState.comuneProvincia = ''; }
+      applyGeoFilters(); updateGeoChips();
+    });
+  });
+  const ra = document.getElementById('geo-chips-resetall');
+  if (ra) ra.addEventListener('click', resetGeoFilters);
+}
+
+function resetGeoFilters() {
+  fRegione.value = ''; populateProvince('');
+  geoState.regione = ''; geoState.provincia = ''; geoState.comune = ''; geoState.comuneProvincia = '';
+  applyGeoFilters(); updateGeoChips();
+}
+
+/* ── Search + suggerimenti ── */
+const geoSearchInput = document.getElementById('geo-search-input');
+const geoSearchClear = document.getElementById('geo-search-clear');
+const geoSearchDD = document.getElementById('geo-search-dd');
+const geoFilterBtn = document.getElementById('geo-filter-btn');
+const geoFilterOverlay = document.getElementById('geo-filter-overlay');
+const geoFilterModal = document.getElementById('geo-filter-modal');
+
+let SUGGESTIONS = [];
+function buildSuggestions() {
+  const items = [];
+  Object.entries(HIERARCHY.regioni).forEach(([reg, rData]) => {
+    items.push({ type: 'regione', label: REGIONE_LABEL(reg), value: reg });
+    Object.entries(rData.province).forEach(([sigla, p]) => {
+      items.push({ type: 'provincia', label: p.nome, value: sigla, regione: reg });
+      p.comuni.forEach(c => {
+        items.push({ type: 'comune', label: c.n, value: String(c.c), regione: reg, provincia: sigla });
+      });
+    });
+  });
+  return items;
+}
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+function highlight(text, query) {
+  const safe = esc(text);
+  if (!query) return safe;
+  const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return safe.replace(re, '<mark>$1</mark>');
+}
+const TYPE_LABELS = { regione: 'Regione', provincia: 'Provincia', comune: 'Comune' };
+
+function renderGeoDD(query) {
+  const q = query.trim().toLowerCase();
+  const matches = q.length === 0 ? [] : SUGGESTIONS.filter(s => s.label.toLowerCase().includes(q)).slice(0, 12);
+
+  if (matches.length === 0) {
+    geoSearchDD.innerHTML = q.length > 0 ? `<div class="geo-dd-empty">Nessun risultato per &ldquo;${esc(q)}&rdquo;</div>` : '';
+    geoSearchDD.classList.toggle('open', q.length > 0);
+    return;
+  }
+
+  let html = '';
+  let lastType = null;
+  matches.forEach(m => {
+    if (m.type !== lastType) { html += `<div class="geo-dd-cat">${TYPE_LABELS[m.type]}</div>`; lastType = m.type; }
+    html += `<div class="geo-dd-item" data-type="${m.type}" data-value="${esc(m.value)}" data-regione="${esc(m.regione || '')}" data-provincia="${esc(m.provincia || '')}">
+      <span>${highlight(m.label, query.trim())}</span><span class="geo-dd-badge">${TYPE_LABELS[m.type]}</span>
+    </div>`;
+  });
+  geoSearchDD.innerHTML = html;
+  geoSearchDD.classList.add('open');
+  geoSearchDD.querySelectorAll('.geo-dd-item').forEach(el => el.addEventListener('click', () => selectGeoSuggestion(el)));
+}
+
+function selectGeoSuggestion(el) {
+  const type = el.dataset.type, value = el.dataset.value, regione = el.dataset.regione, provincia = el.dataset.provincia;
+  if (type === 'regione') {
+    fRegione.value = value; geoState.regione = value; populateProvince(value);
+    geoState.provincia = ''; geoState.comune = '';
+  } else if (type === 'provincia') {
+    fRegione.value = regione; geoState.regione = regione; populateProvince(regione);
+    fProvincia.value = value; geoState.provincia = value; populateComuni(regione, value);
+    geoState.comune = '';
+  } else if (type === 'comune') {
+    fRegione.value = regione; geoState.regione = regione; populateProvince(regione);
+    fProvincia.value = provincia; geoState.provincia = provincia; populateComuni(regione, provincia);
+    fComune.value = value; geoState.comune = value; geoState.comuneProvincia = provincia;
+    geoState.comuneNome = el.querySelector('span').textContent;
+  }
+  applyGeoFilters();
+  geoSearchInput.value = ''; geoSearchClear.style.display = 'none'; geoSearchDD.classList.remove('open');
+  updateGeoChips();
+}
+
+geoSearchInput.addEventListener('input', () => {
+  geoSearchClear.style.display = geoSearchInput.value ? '' : 'none';
+  renderGeoDD(geoSearchInput.value);
+});
+geoSearchClear.addEventListener('click', () => {
+  geoSearchInput.value = ''; geoSearchClear.style.display = 'none'; geoSearchDD.classList.remove('open');
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#geo-searchbar')) geoSearchDD.classList.remove('open');
+});
+
+geoFilterBtn.addEventListener('click', () => { geoFilterModal.classList.add('open'); geoFilterOverlay.classList.add('open'); panelOpened(); });
+document.getElementById('geo-pfm-close').addEventListener('click', closeGeoFilterModal);
+geoFilterOverlay.addEventListener('click', closeGeoFilterModal);
+document.getElementById('geo-pfm-reset').addEventListener('click', () => { resetGeoFilters(); closeGeoFilterModal(); });
+document.getElementById('geo-pfm-apply').addEventListener('click', () => { applyGeoFilters(); updateGeoChips(); closeGeoFilterModal(); });
+function closeGeoFilterModal() {
+  if (!geoFilterModal.classList.contains('open')) return;
+  geoFilterModal.classList.remove('open'); geoFilterOverlay.classList.remove('open'); panelClosed();
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeGeoFilterModal(); });
+
+fetch('dist/geo/geo_hierarchy.json')
+  .then(r => r.json())
+  .then(d => {
+    HIERARCHY = d;
+    regioniList().forEach(r => {
+      const o = document.createElement('option');
+      o.value = r; o.textContent = REGIONE_LABEL(r);
+      fRegione.appendChild(o);
+    });
+    SUGGESTIONS = buildSuggestions();
+    applyGeoFilters();
+  });

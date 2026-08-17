@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<meta name="creation_Date" content="18/08/2026">
+<meta name="author" content="Giovan Battista Vitrano per OpenDataSicilia.it">
+<title>Potere d'acquisto reale | Comuni e province d'Italia</title>
+<meta name="description" content="Mappa interattiva del potere d'acquisto reale (reddito medio corretto per il costo della vita) per i comuni e le province italiane, con vista a stima OMI e vista a dato NIC Istat reale."/>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+      integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V" crossorigin="anonymous"/>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+        integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"
+        integrity="sha384-QfbOCebHNw8pQiPAOd2IFee2v2A5VYZxBk0+JGZ5H+3mfzVIp6zsQNkTsfGJot93" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="css/style.css?v=9"/>
+	  <link rel="shortcut icon" href="img/favicon.ico"/> 
+	<link rel="icon" href="img/favicon.png" type="image/png"/> 
+</head>
+<body>
+
+<div id="map"></div>
+<div id="map-loader"><div class="spinner"></div><span>Caricamento mappa...</span></div>
+
+<div id="view-dial">
+  <button id="dial-fab" class="dial-fab" title="Apri/chiudi il menu delle viste" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+  </button>
+  <div id="dial-items" class="dial-items">
+    <button class="dial-item" data-action="home" title="Home — torna alla vista generale dell'Italia">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 3 3 10h2v10h5v-6h4v6h5V10h2L12 3Z"/></svg>
+    </button>
+    <button class="dial-item active" data-view="comuni" title="Vista Comuni — reddito corretto per costo vita stimato (proxy OMI), attiva di default">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C7 2 3 6 3 10.5 3 16.5 12 22 12 22s9-5.5 9-11.5C21 6 17 2 12 2Zm0 11.5A3 3 0 1 1 12 7.5a3 3 0 0 1 0 6Z"/></svg>
+    </button>
+    <button class="dial-item" data-view="province" title="Vista Province — reddito corretto per il NIC Istat ufficiale, dato reale ma disponibile solo in 77 province su 107">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 4v16l6-2 6 2 6-2V2l-6 2-6-2-6 2Zm7 1.2 4 1.3v13.3l-4-1.3V5.2Z"/></svg>
+    </button>
+    <button class="dial-item" data-view="bivariata" title="Vista Bivariata — incrocia reddito e costo vita stimato in 9 classi, invece di comprimerli in un indice unico">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 3h8v8H3V3Zm10 0h8v8h-8V3ZM3 13h8v8H3v-8Zm10 0h8v8h-8v-8Z"/></svg>
+    </button>
+    <button class="dial-item" data-action="ranking" title="Classifiche — i 10 comuni/province/regioni dove si vive meglio e peggio">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M4 21h4V9H4v12Zm6 0h4V3h-4v18Zm6 0h4v-8h-4v8Z"/></svg>
+    </button>
+    <button class="dial-item" data-action="info" title="Info — apri le note metodologiche complete (formula, fonti, limiti)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2v6Zm0-8h-2V7h2v2Z"/></svg>
+    </button>
+    <button id="theme-toggle" class="dial-item" data-action="theme" title="Cambia tema chiaro/scuro">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21q-3.75 0-6.375-2.625T3 12q0-3.75 2.625-6.375T12 3q.35 0 .688.025t.662.075q-1.025.725-1.638 1.888T11.1 7.5q0 2.25 1.575 3.825T16.5 12.9q1.375 0 2.525-.613T20.9 10.65q.05.325.075.663T21 12q0 3.75-2.625 6.375T12 21Z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 17q2.075 0 3.538-1.463T17 12q0-2.075-1.463-3.538T12 7Q9.925 7 8.463 8.463T7 12q0 2.075 1.463 3.538T12 17Zm-7-4q0-.425.288-.713T6 12H4q-.425 0-.713.288T3 13q0 .425.288.713T4 14h2q.425 0 .713-.288T7 13Zm14 0q0-.425-.288-.713T20 12h-2q-.425 0-.713.288T17 13q0 .425.288.713T18 14h2q.425 0 .713-.288T21 13ZM11 5q0 .425.288.713T12 6q.425 0 .713-.288T13 5V3q0-.425-.288-.713T12 2q-.425 0-.713.288T11 3v2Zm0 16q0 .425.288.713T12 22q.425 0 .713-.288T13 21v-2q0-.425-.288-.713T12 18q-.425 0-.713.288T11 19v2ZM6.35 7.75 5.275 6.675q-.275-.275-.275-.687T5.275 5.3q.3-.3.7-.3t.7.3L7.75 6.35q.275.275.275.687t-.275.688q-.275.3-.687.3T6.35 7.75ZM17.65 19.05l-1.075-1.075q-.275-.3-.263-.7t.288-.675q.275-.3.688-.3t.687.275l1.075 1.075q.3.275.3.688t-.3.687q-.275.3-.687.3t-.688-.3ZM16.65 7.75q-.275-.275-.263-.687t.288-.688l1.075-1.075q.275-.3.688-.3t.687.3q.3.275.3.688t-.3.687L18.05 7.75q-.275.275-.687.263T16.65 7.75ZM5.3 18.7q-.3-.3-.3-.7t.3-.7l1.05-1.075q.275-.3.688-.288t.687.288q.3.3.3.7t-.3.7L6.675 18.7q-.275.3-.687.3T5.3 18.7Z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="side-panel">
+  <button id="panel-toggle" title="Apri/chiudi pannello" aria-expanded="true">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button id="panel-close-mobile" title="Chiudi">&#x2715;</button>
+
+  <div id="tab-hdrs">
+    <button class="tab-hdr active" data-view="comuni">Comuni</button>
+    <button class="tab-hdr" data-view="province">Province</button>
+    <button class="tab-hdr" data-view="bivariata">Bivariata</button>
+    <button class="tab-hdr" data-view="capoluoghi">Capoluoghi</button>
+  </div>
+
+  <div id="panel-body">
+
+    <div class="tab-content active" data-tab="comuni">
+      <div class="panel-title-box">
+        <h1>Potere d'acquisto reale</h1>
+        <p>Reddito medio IRPEF 2024 corretto per il costo della vita (proxy OMI). Clicca su un comune per i dettagli.</p>
+      </div>
+      <div class="legend legend-filter" data-legend-view="comuni">
+        <div class="title">Potere d'acquisto reale</div>
+        <button class="row" data-class="1"><span class="swatch" style="background:#c94f4f"></span><span>Molto basso</span></button>
+        <button class="row" data-class="2"><span class="swatch" style="background:#d99a55"></span><span>Basso</span></button>
+        <button class="row" data-class="3"><span class="swatch" style="background:#c9bd8a"></span><span>Nella media</span></button>
+        <button class="row" data-class="4"><span class="swatch" style="background:#7fac86"></span><span>Alto</span></button>
+        <button class="row" data-class="5"><span class="swatch" style="background:#3f8f6b"></span><span>Molto alto</span></button>
+        <button class="legend-clear" data-legend-clear="comuni" style="display:none">&times; rimuovi filtro classe</button>
+      </div>
+
+      <hr class="panel-sep">
+      <div class="ranking-block">
+        <div class="ranking-block-header">
+          <h3>Classifiche</h3>
+          <div class="ranking-subtabs" data-scope="comuni">
+            <button class="ranking-subtab active" data-unit="comuni">Comuni</button>
+            <button class="ranking-subtab" data-unit="regioni">Regioni</button>
+          </div>
+        </div>
+        <button class="ranking-viewport-toggle" data-scope="comuni" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <p class="ranking-subtitle" data-scope="comuni"></p>
+        <div class="ranking-section">
+          <div class="ranking-section-title ranking-section-title--best">▲ Potere d'acquisto più alto</div>
+          <ol class="ranking-list ranking-top" data-scope="comuni"></ol>
+        </div>
+        <div class="ranking-section">
+          <div class="ranking-section-title ranking-section-title--worst">▼ Potere d'acquisto più basso</div>
+          <ol class="ranking-list ranking-bottom" data-scope="comuni"></ol>
+        </div>
+        <p class="ranking-note" data-scope="comuni"></p>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="province">
+      <div class="panel-title-box">
+        <h1>Potere d'acquisto reale</h1>
+        <p>Reddito medio provinciale corretto per il NIC Istat ufficiale, dove rilevato. Clicca su una provincia per i dettagli.</p>
+      </div>
+      <div class="legend legend-filter" data-legend-view="province">
+        <div class="title">Potere d'acquisto reale</div>
+        <button class="row" data-class="1"><span class="swatch" style="background:#c94f4f"></span><span>Molto basso</span></button>
+        <button class="row" data-class="2"><span class="swatch" style="background:#d99a55"></span><span>Basso</span></button>
+        <button class="row" data-class="3"><span class="swatch" style="background:#c9bd8a"></span><span>Nella media</span></button>
+        <button class="row" data-class="4"><span class="swatch" style="background:#7fac86"></span><span>Alto</span></button>
+        <button class="row" data-class="5"><span class="swatch" style="background:#3f8f6b"></span><span>Molto alto</span></button>
+        <div class="row row-static"><span class="swatch" style="background:#5a6472"></span><span>Nessuna rilevazione NIC</span></div>
+        <button class="legend-clear" data-legend-clear="province" style="display:none">&times; rimuovi filtro classe</button>
+      </div>
+      <div id="province-warning">
+        ⚠ Il NIC Istat varia pochissimo tra province (2,4 punti in tutta Italia): questa vista è un dato reale ma <b>corregge quasi nulla</b> per il costo della vita — riflette soprattutto il reddito nominale. Per una stima del potere d'acquisto più realistica, usa la vista <b>Comuni</b>.
+      </div>
+
+      <hr class="panel-sep">
+      <div class="ranking-block">
+        <div class="ranking-block-header">
+          <h3>Classifiche</h3>
+        </div>
+        <button class="ranking-viewport-toggle" data-scope="province" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <p class="ranking-subtitle" data-scope="province"></p>
+        <div class="ranking-section">
+          <div class="ranking-section-title ranking-section-title--best">▲ Potere d'acquisto più alto</div>
+          <ol class="ranking-list ranking-top" data-scope="province"></ol>
+        </div>
+        <div class="ranking-section">
+          <div class="ranking-section-title ranking-section-title--worst">▼ Potere d'acquisto più basso</div>
+          <ol class="ranking-list ranking-bottom" data-scope="province"></ol>
+        </div>
+        <p class="ranking-note" data-scope="province"></p>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="bivariata">
+      <div class="panel-title-box">
+        <h1>Potere d'acquisto reale</h1>
+        <p>Incrocio fra reddito medio e costo della vita stimato (terzili): mostra dove le due variabili si compensano e dove no. Clicca su un comune per i dettagli.</p>
+      </div>
+      <div id="legend-bivar">
+        <div class="bivar-title">Classe bivariata</div>
+        <div class="bivar-sub">Click su una cella per filtrare la mappa</div>
+        <div class="bivar-colheads">
+          <span></span><span>bassa</span><span>media</span><span>alta</span>
+        </div>
+        <div class="bivar-body">
+          <div class="bivar-ylabel">costo vita &uarr;</div>
+          <div class="bivar-rows">
+            <div class="bivar-rowline">
+              <span class="rowlabel">alta</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="13" style="background:#64acbe" title="Reddito basso · Costo vita alto"></span>
+                <span class="bs" data-class="23" style="background:#627f8c" title="Reddito medio · Costo vita alto"></span>
+                <span class="bs" data-class="33" style="background:#574249" title="Reddito alto · Costo vita alto"></span>
+              </div>
+            </div>
+            <div class="bivar-rowline">
+              <span class="rowlabel">media</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="12" style="background:#b0d5df" title="Reddito basso · Costo vita medio"></span>
+                <span class="bs" data-class="22" style="background:#ad9ea5" title="Reddito medio · Costo vita medio"></span>
+                <span class="bs" data-class="32" style="background:#985356" title="Reddito alto · Costo vita medio"></span>
+              </div>
+            </div>
+            <div class="bivar-rowline">
+              <span class="rowlabel">bassa</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="11" style="background:#e8e8e8" title="Reddito basso · Costo vita basso"></span>
+                <span class="bs" data-class="21" style="background:#e4acac" title="Reddito medio · Costo vita basso"></span>
+                <span class="bs" data-class="31" style="background:#c85a5a" title="Reddito alto · Costo vita basso"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bivar-xlabel">reddito &rarr;</div>
+        <div id="bivar-hover" class="bivar-hover"></div>
+        <button id="bivar-clear" class="bivar-clear" style="display:none">&times; rimuovi filtro classe</button>
+      </div>
+
+      <hr class="panel-sep">
+      <div class="ranking-block">
+        <div class="ranking-block-header">
+          <h3>Classifica per classe</h3>
+        </div>
+        <button class="ranking-viewport-toggle" data-scope="bivariata" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <p class="ranking-subtitle">Le 9 classi dell'incrocio reddito × costo vita. Clicca su una classe per vedere i comuni con potere d'acquisto più alto in quella classe.</p>
+        <div class="bivar-class-accordion" id="bivar-class-accordion"></div>
+        <p class="ranking-note">Solo comuni con almeno 1.000 contribuenti, per evitare medie statisticamente rumorose sui centri molto piccoli.</p>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="capoluoghi">
+      <div class="panel-title-box">
+        <h1>Classifica generale capoluoghi</h1>
+        <p>Tutti i 107 comuni capoluogo di provincia, ordinati per potere d'acquisto reale (proxy OMI). Clicca su una riga per aprirla nella vista Comuni.</p>
+      </div>
+      <div class="ranking-search">
+        <input type="text" id="capoluoghi-search" placeholder="Cerca capoluogo o provincia…" autocomplete="off">
+        <span id="capoluoghi-search-count" class="ranking-search-count"></span>
+      </div>
+      <div class="ranking-block">
+        <ol class="ranking-list ranking-general" data-scope="capoluoghi"></ol>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<a id="ods-logo" href="https://opendatasicilia.it/" target="_blank" rel="noopener" title="OpenDataSicilia.it">
+  <img src="img/opendatasicilia.png" alt="OpenDataSicilia">
+</a>
+
+<div id="geo-search-area">
+  <div id="geo-chips"></div>
+  <div id="geo-searchbar">
+    <span class="geo-si">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+        <path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+      </svg>
+    </span>
+    <input type="text" id="geo-search-input" placeholder="Cerca regione, provincia, comune…" autocomplete="off">
+    <button id="geo-search-clear" style="display:none">&#x2715;</button>
+    <div class="geo-sep"></div>
+    <button id="geo-filter-btn" title="Filtri">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
+        <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+      </svg>
+      <span id="geo-filter-badge" style="display:none"></span>
+    </button>
+    <div id="geo-search-dd"></div>
+  </div>
+</div>
+
+<div id="geo-filter-overlay"></div>
+<div id="geo-filter-modal">
+  <div class="pfm-header">
+    <h3>Filtri geografici</h3>
+    <button id="geo-pfm-close">&#x2715;</button>
+  </div>
+  <div class="pfm-group">
+    <label>Regione</label>
+    <select id="f-regione"><option value="">— Tutte —</option></select>
+  </div>
+  <div class="pfm-group">
+    <label>Provincia</label>
+    <select id="f-provincia" disabled><option value="">— Tutte —</option></select>
+  </div>
+  <div class="pfm-group">
+    <label>Comune</label>
+    <select id="f-comune" disabled><option value="">— Tutti —</option></select>
+  </div>
+  <div class="pfm-footer">
+    <button id="geo-btn-zoom" disabled>↗ Zoom selezione</button>
+    <button id="geo-pfm-reset">Ripristina</button>
+    <button id="geo-pfm-apply">Applica</button>
+  </div>
+</div>
+
+<div id="note-overlay">
+  <div id="note-modal">
+    <button id="note-close" title="Chiudi">✕</button>
+    <div id="note-head">
+      <h2>Note metodologiche</h2>
+      <p class="subtitle">Come è calcolato il potere d'acquisto reale mostrato in mappa</p>
+
+      <div id="note-tab-hdrs">
+        <button class="note-tab-hdr active" data-note-tab="metodologia"><span class="note-tab-ico">📐</span>Metodologia</button>
+        <button class="note-tab-hdr" data-note-tab="fonti"><span class="note-tab-ico">©</span>Fonte, licenza e crediti</button>
+      </div>
+    </div>
+
+    <div id="note-scroll">
+
+    <div class="note-tab-content active" data-note-tab="metodologia">
+
+    <h3>Formula</h3>
+    <p><code>potere_acquisto_reale = reddito_medio × [costo_vita_italia_media / costo_vita_stimato]</code></p>
+    <p>Il reddito medio è corretto al ribasso dove il costo della vita è sopra la media nazionale, e al rialzo dove è sotto — così un reddito nominale alto in una zona molto cara può risultare in un potere d'acquisto reale inferiore a un reddito più basso in una zona economica.</p>
+
+    <h3>Perché due viste, con due costo-vita diversi</h3>
+    <p>Il NIC Istat (indice prezzi al consumo) misura la <b>variazione</b> dei prezzi nel tempo in ciascuna città rispetto al proprio anno base — non il <b>livello assoluto</b> del costo della vita, quindi non è confrontabile direttamente fra città diverse: nei capoluoghi varia solo tra 102,3 e 104,7 (spread 2,4 punti), un intervallo troppo stretto per spiegare differenze reali di costo della vita. Per questo la mappa offre due viste, coerenti coi rispettivi dati:</p>
+    <table>
+      <tr><th>Vista</th><th>Costo della vita</th><th>Natura del dato</th></tr>
+      <tr><td><b>Comuni</b></td><td>Valore immobiliare medio OMI, come differenziale rispetto alla media nazionale</td><td>Stima (proxy), ma con variazione geografica reale (225–10.767 €/mq)</td></tr>
+      <tr><td><b>Province</b></td><td>NIC Istat ufficiale, dove rilevato</td><td>Dato diretto, nessuna stima — ma correzione minima per il motivo sopra</td></tr>
+      <tr><td><b>Bivariata</b></td><td>Stessa stima OMI della vista Comuni</td><td>Mostra reddito e costo vita come due terzili incrociati, invece di comprimerli nell'indice unico</td></tr>
+    </table>
+
+    <h3>Vista Bivariata — come si legge</h3>
+    <p>Reddito medio e costo della vita stimato (OMI) sono divisi ciascuno in tre terzili (basso/medio/alto su tutti i 7.890 comuni) e incrociati in una griglia 3×3: 9 colori invece dei 5 dell'indice unico. Utile per distinguere comuni dove le due variabili si compensano (reddito alto e costo alto, o reddito basso e costo basso — entrambi vicini alla media nel potere d'acquisto) da quelli dove non si compensano (reddito basso ma costo alto, o viceversa — i casi più interessanti, invisibili nell'indice unico).</p>
+
+    <h3>Vista Comuni — come si stima il costo della vita</h3>
+    <p>Si usa il valore OMI medio (€/m², Agenzia delle Entrate, abitazioni civili stato normale) del comune, rapportato alla media nazionale OMI. Dove OMI manca o è nullo (es. mercato immobiliare fermo in aree post-sisma) si usa la media provinciale, poi quella nazionale.</p>
+
+    <h3>Vista Province — come si legge</h3>
+    <p>Reddito medio provinciale (aggregato pesato sui contribuenti dei comuni della provincia) corretto per il NIC ufficiale del capoluogo, disponibile solo per le <b>77 province con rilevazione diretta</b>. Le altre 30 restano grigie ("nessuna rilevazione NIC") invece di ricevere una stima: 27 perché Istat non rileva il NIC nel capoluogo, 2 (Savona, Taranto) perché il dato manca nella fonte per il mese corrente, 1 (Olbia-Tempio) perché la provincia rilevata da Istat è stata abolita nel 2016.</p>
+
+    <h3>Fonti dei dati e copertura</h3>
+    <table>
+      <tr><th>Fonte</th><th>Dato</th><th>Copertura</th></tr>
+      <tr><td>MEF – Dip. Finanze</td><td>Reddito medio IRPEF 2024</td><td>7.897 comuni</td></tr>
+      <tr><td>Istat</td><td>NIC prezzi al consumo, luglio 2026 (base 2025=100)</td><td>77 province + dato nazionale</td></tr>
+      <tr><td>Agenzia delle Entrate – OMI</td><td>Valore immobiliare medio, 2° sem. 2025</td><td>7.511 comuni</td></tr>
+      <tr><td>Istat</td><td>Confini comunali e provinciali</td><td>7.904 comuni, 107 province (1/1/2022)</td></tr>
+    </table>
+    <p>La fonte usata per ogni area è indicata nel popup al click.</p>
+
+    <h3>Altri limiti da tenere presente</h3>
+    <ul>
+      <li>I comuni con pochi contribuenti possono avere una media reddituale statisticamente rumorosa (basta un singolo contribuente ad alto reddito a spostarla sensibilmente).</li>
+      <li>Il valore OMI è una media semplice tra le zone omogenee del comune, senza pesatura per popolazione o superficie di ciascuna zona.</li>
+      <li>Redditi (2024) e OMI (2° sem. 2025) si riferiscono a periodi leggermente diversi.</li>
+    </ul>
+
+    </div>
+
+    <div class="note-tab-content" data-note-tab="fonti">
+
+    <h3><span class="note-h-ico">🔗</span>Fonte dati e link</h3>
+    <ul class="note-src-list">
+      <li><span class="note-src-ico">🏛️</span><div><a href="https://www.mef.gov.it/" target="_blank" rel="noopener">MEF – Dipartimento delle Finanze</a><span class="note-src-desc">Redditi IRPEF comunali</span></div></li>
+      <li><span class="note-src-ico">📊</span><div><a href="https://www.istat.it/" target="_blank" rel="noopener">Istat</a><span class="note-src-desc">NIC prezzi al consumo, confini amministrativi</span></div></li>
+      <li><span class="note-src-ico">🏠</span><div><a href="https://www.agenziaentrate.gov.it/" target="_blank" rel="noopener">Agenzia delle Entrate</a><span class="note-src-desc">Osservatorio del Mercato Immobiliare (OMI)</span></div></li>
+    </ul>
+
+    <h3><span class="note-h-ico">⚖️</span>Licenza</h3>
+    <p>Dati derivati distribuiti con licenza <a href="https://creativecommons.org/licenses/by/4.0/deed.it" target="_blank" rel="noopener"><b>CC BY 4.0</b></a>.</p>
+
+    <h3><span class="note-h-ico">💻</span>Sviluppo e tecnologia</h3>
+    <p>Web app progettata e sviluppata da <a href="https://www.linkedin.com/in/gbvitrano/" target="_blank" rel="noopener">@gbvitrano</a> in collaborazione con <a href="https://www.anthropic.com/" target="_blank" rel="noopener">Claude AI (Anthropic)</a>, che ha affiancato le scelte architetturali, l'ottimizzazione del codice e lo sviluppo delle funzionalità di visualizzazione geospaziale.</p>
+
+    </div>
+
+    </div>
+
+    <button id="note-top" title="Torna in cima">↑</button>
+  </div>
+</div>
+
+<script src="js/main.js?v=15"></script>
+</body>
+</html>
