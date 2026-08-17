@@ -628,11 +628,24 @@ dialItems.querySelectorAll('.dial-item').forEach(btn => {
       sidePanel.classList.contains('closed') ? openSidePanel() : closeSidePanel();
     } else if (btn.dataset.action === 'theme') {
       setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    } else if (btn.dataset.action === 'fullscreen') {
+      toggleFullscreen();
     } else if (btn.dataset.view) {
       switchView(btn.dataset.view);
     }
     closeDial();
   });
+});
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+document.addEventListener('fullscreenchange', () => {
+  const btn = document.getElementById('fullscreen-toggle');
+  const active = !!document.fullscreenElement;
+  btn.querySelector('.icon-expand').style.display = active ? 'none' : 'block';
+  btn.querySelector('.icon-collapse').style.display = active ? 'block' : 'none';
 });
 
 /* ── Filtro geografico interconnesso: Regione → Provincia → Comune ─────
@@ -793,7 +806,43 @@ function applyGeoFilters() {
   geoBtnZoom.disabled = !hasSel;
   zoomToSelection();
   if (RANKINGS) renderAllRankings();
+  syncUrlFromGeoState();
 }
+
+/* ── Routing: regione/provincia/comune riflessi nell'indirizzo (query
+   string, cosi' il deep-link funziona anche su hosting statico senza
+   rewrite lato server) e ripristinati al caricamento o con back/forward. ── */
+function syncUrlFromGeoState() {
+  const p = new URLSearchParams();
+  if (geoState.regione) p.set('regione', geoState.regione);
+  if (geoState.provincia) p.set('provincia', geoState.provincia);
+  if (geoState.comune) p.set('comune', geoState.comune);
+  const qs = p.toString();
+  const url = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+  if (url !== window.location.pathname + window.location.search + window.location.hash) {
+    history.replaceState(null, '', url);
+  }
+}
+
+function restoreGeoStateFromUrl() {
+  const p = new URLSearchParams(window.location.search);
+  const reg = p.get('regione'), prov = p.get('provincia'), com = p.get('comune');
+
+  fRegione.value = ''; populateProvince('');
+  geoState.regione = ''; geoState.provincia = ''; geoState.comune = ''; geoState.comuneProvincia = '';
+
+  if (reg && HIERARCHY.regioni[reg]) {
+    fRegione.value = reg; geoState.regione = reg; populateProvince(reg);
+    if (prov && provinceOf(reg)[prov]) {
+      fProvincia.value = prov; geoState.provincia = prov; populateComuni(reg, prov);
+      const c = com && comuniOf(reg, prov).find(x => String(x.c) === com);
+      if (c) { fComune.value = String(c.c); geoState.comune = String(c.c); geoState.comuneProvincia = prov; geoState.comuneNome = c.n; }
+    }
+  }
+  applyGeoFilters();
+  updateGeoChips();
+}
+window.addEventListener('popstate', restoreGeoStateFromUrl);
 
 geoBtnZoom.addEventListener('click', zoomToSelection);
 
@@ -945,5 +994,5 @@ fetch('dist/geo/geo_hierarchy.json')
       fRegione.appendChild(o);
     });
     SUGGESTIONS = buildSuggestions();
-    applyGeoFilters();
+    restoreGeoStateFromUrl();
   });
