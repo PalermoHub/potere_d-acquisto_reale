@@ -593,14 +593,14 @@
       <tr><td>Istat</td><td>NIC prezzi al consumo, luglio 2026 (base 2025=100)</td><td>77 province + dato nazionale</td></tr>
       <tr><td>Agenzia delle Entrate – OMI</td><td>Valore immobiliare medio, 2° sem. 2025</td><td>7.511 comuni</td></tr>
       <tr><td>Istat</td><td>Confini comunali e provinciali</td><td>7.904 comuni, 107 province (1/1/2022)</td></tr>
-      <tr><td>Istat</td><td>Popolazione residente comunale (censimento 2021)</td><td>7.889 comuni</td></tr>
+      <tr><td>Istat</td><td>Popolazione residente comunale (bilancio demografico, 31/12/2025, dato provvisorio)</td><td>7.890 comuni</td></tr>
     </table>
-    <p>La popolazione, mostrata nei popup, è quella del censimento permanente 2021 (non aggiornata agli anni successivi): serve solo come riferimento di contesto, ad esempio per riconoscere i comuni "dormitorio" con pochi contribuenti ma popolazione consistente, o viceversa.</p>
+    <p>La popolazione, mostrata nei popup, è quella del bilancio demografico mensile Istat al 31 dicembre 2025 (dato provvisorio): serve solo come riferimento di contesto, ad esempio per riconoscere i comuni "dormitorio" con pochi contribuenti ma popolazione consistente, o viceversa.</p>
 
     <h3><span class="note-h-ico">👪</span>Popolazione: perché non entra nel calcolo, e cosa significa il rapporto contribuenti/popolazione</h3>
     <p>La popolazione <b>non</b> è usata nella formula del potere d'acquisto reale né nei terzili delle viste bivariate: il costo della vita stimato (OMI) incorpora già indirettamente l'effetto della densità abitativa, perché i comuni più popolosi tendono ad avere valori immobiliari più alti proprio per l'elevata domanda. Aggiungere la popolazione come seconda variabile sarebbe quindi in gran parte ridondante rispetto a OMI, e cambierebbe risultati già esistenti: per questo resta un dato puramente informativo nel popup, non un ingrediente del calcolo.</p>
     <p>Il popup mostra anche il rapporto <b>contribuenti / popolazione</b>: a livello nazionale è tipicamente intorno al 45–50%, perché i minori non dichiarano e una parte dei pensionati a basso reddito resta sotto la soglia di dichiarazione. Un comune che si discosta molto da questo intervallo è un segnale in più oltre all'avviso sui comuni "dormitorio": un rapporto molto basso può indicare una popolazione più giovane o anziana della media, o economia sommersa; un rapporto anomalo (es. sopra il 100%) è quasi sempre un disallineamento fra le fonti, non un fenomeno demografico reale.</p>
-    <p>Va letto con cautela per un motivo aggiuntivo: la popolazione è del censimento <b>2021</b>, i contribuenti sono del <b>2024</b>. Un comune in forte spopolamento o in forte crescita in quei tre anni mostrerà un rapporto che riflette lo scarto temporale fra le fonti, non necessariamente una particolarità demografica del comune.</p>
+    <p>Va letto con cautela per un motivo aggiuntivo: la popolazione è del bilancio demografico al 31/12/<b>2025</b> (dato provvisorio), i contribuenti sono del <b>2024</b>.</p>
     <p>La fonte usata per ogni area è indicata nel popup al click.</p>
 
     <h3>Altri limiti da tenere presente</h3>
@@ -619,6 +619,7 @@
       <li><span class="note-src-ico">🏛️</span><div><a href="https://www.mef.gov.it/" target="_blank" rel="noopener">MEF – Dipartimento delle Finanze</a><span class="note-src-desc">Redditi IRPEF comunali</span></div></li>
       <li><span class="note-src-ico">📊</span><div><a href="https://www.istat.it/" target="_blank" rel="noopener">Istat</a><span class="note-src-desc">NIC prezzi al consumo, confini amministrativi</span></div></li>
       <li><span class="note-src-ico">🏠</span><div><a href="https://www.agenziaentrate.gov.it/" target="_blank" rel="noopener">Agenzia delle Entrate</a><span class="note-src-desc">Osservatorio del Mercato Immobiliare (OMI)</span></div></li>
+      <li><span class="note-src-ico">👪</span><div><a href="https://demo.istat.it/app/?i=D7B" target="_blank" rel="noopener">Istat – Demo, Bilancio demografico mensile</a><span class="note-src-desc">Popolazione residente comunale al 31/12/2025 (dato provvisorio)</span></div></li>
     </ul>
 
     <h3><span class="note-h-ico">⚖️</span>Licenza</h3>
@@ -635,6 +636,6 @@
   </div>
 </div>
 
-<script src="js/main.js?v=21"></script>
+<script src="js/main.js?v=22"></script>
 </body>
 </html>

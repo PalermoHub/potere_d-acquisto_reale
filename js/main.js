@@ -154,8 +154,9 @@ const FONTE_LABEL_COMUNI = {
 
 /* Contribuenti/popolazione: rapporto tipico ~45-50% a livello nazionale
    (minori e molti pensionati a basso reddito non dichiarano). Popolazione e'
-   censimento 2021, contribuenti 2024: uno scarto marcato puo' riflettere
-   variazione demografica nel frattempo, non solo composizione anagrafica. */
+   bilancio demografico 31/12/2025 (dato provvisorio), contribuenti 2024: uno
+   scarto marcato puo' riflettere variazione demografica nel frattempo, non
+   solo composizione anagrafica. */
 function popRatioRow(props) {
   if (props.popolazione == null || !props.n_contribuenti) return '';
   const pct = (props.n_contribuenti / props.popolazione * 100).toFixed(0);
@@ -174,7 +175,7 @@ function popupComuni(props) {
     <div class="pop-row"><span class="k">Valore immobiliare (OMI)</span><span class="v">${fmtEuroMq(props.omi_eur_mq)}</span></div>
     <div class="pop-row"><span class="k">Fonte costo vita</span><span class="v">${FONTE_LABEL_COMUNI[props.fonte_costo_vita] || props.fonte_costo_vita}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
-    <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2025)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
     ${popRatioRow(props)}
     ${fonteWarn}
   `;
@@ -205,7 +206,7 @@ function popupBivariata(props) {
     <div class="pop-row"><span class="k">Costo vita stimato (OMI)</span><span class="v">${fmtEuroMq(props.costo_vita_stimato)} <i>(${TERZILE_LABEL[props.terzile_costo_vita]})</i></span></div>
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
-    <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2025)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
     ${popRatioRow(props)}
   `;
 }
@@ -221,7 +222,7 @@ function popupBivariataReddito(props) {
     <div class="pop-row"><span class="k">Reddito medio IRPEF (nominale)</span><span class="v">${fmtEuro(props.reddito_medio_euro)} <i>(${TERZILE_LABEL[props.terzile_reddito_nom]})</i></span></div>
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)} <i>(${TERZILE_LABEL[props.terzile_pot_acquisto]})</i></span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
-    <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2025)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
     ${popRatioRow(props)}
   `;
 }
@@ -256,7 +257,7 @@ function popupRedditiComuni(props) {
     <div class="pop-row"><span class="k">Regione</span><span class="v">${REGIONE_LABEL(props.regione)}</span></div>
     <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
-    <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2025)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
     ${popRatioRow(props)}
   `;
 }
