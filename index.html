@@ -14,7 +14,7 @@
         integrity="sha384-QfbOCebHNw8pQiPAOd2IFee2v2A5VYZxBk0+JGZ5H+3mfzVIp6zsQNkTsfGJot93" crossorigin="anonymous"></script>
 	<meta name="author" content="Giovan Battista Vitrano per OpenDataSicilia.it">	
 	<meta name="creation_Date" content="18/08/2026">	
-	<link rel="stylesheet" href="css/style.css?v=11"/>
+	<link rel="stylesheet" href="css/style.css?v=16"/>
 	<link rel="shortcut icon" href="img/favicon.ico"/> 
 	<link rel="icon" href="img/favicon.png" type="image/png"/> 
 
@@ -74,8 +74,17 @@
     <button class="dial-item" data-view="province" title="Vista Province — reddito corretto per il NIC Istat ufficiale, dato reale ma disponibile solo in 77 province su 107">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 4v16l6-2 6 2 6-2V2l-6 2-6-2-6 2Zm7 1.2 4 1.3v13.3l-4-1.3V5.2Z"/></svg>
     </button>
+    <button class="dial-item" data-view="redditi" title="Vista Redditi: reddito medio IRPEF nominale per provincia, dato MEF non corretto per il costo della vita">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm3.9 6.7-.3 1h-4.1c-.1.3-.1.6-.1.9v.2h3.9l-.3 1H11.6c.3 1.5 1.6 2.6 3.1 2.6.8 0 1.5-.2 2.1-.6v1.7c-.6.3-1.4.5-2.2.5-2.4 0-4.4-1.6-4.9-3.8v-.4H8.1l.3-1h1.2v-.2c0-.3 0-.6.1-.9H8.4l.3-1h1.3c.7-2 2.6-3.4 4.8-3.4.8 0 1.6.2 2.2.6v1.7c-.6-.4-1.3-.6-2.1-.6-1.4 0-2.6.9-3.1 2.1h4.1Z"/></svg>
+    </button>
+    <button class="dial-item" data-view="redditiComuni" title="Vista Redditi comuni: reddito medio IRPEF nominale per comune, dato MEF non corretto per il costo della vita">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2 3 6.5v2L12 13l9-4.5v-2L12 2Zm-9 8.9v2L12 15l9-4.1v-2L12 13l-9-2.1Zm0 4.6v2L12 19.6l9-4.1v-2L12 17.5l-9-2Z"/></svg>
+    </button>
     <button class="dial-item" data-view="bivariata" title="Vista Bivariata — incrocia reddito e costo vita stimato in 9 classi, invece di comprimerli in un indice unico">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 3h8v8H3V3Zm10 0h8v8h-8V3ZM3 13h8v8H3v-8Zm10 0h8v8h-8v-8Z"/></svg>
+    </button>
+    <button class="dial-item" data-view="bivariataReddito" title="Vista Bivariata reddito: incrocia reddito nominale e potere d'acquisto reale in 9 classi, per vedere dove i due divergono di più">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M6.5 6.5v7M17.5 6.5v7"/></svg>
     </button>
     <button class="dial-item" data-action="ranking" title="Classifiche — i 10 comuni/province/regioni dove si vive meglio e peggio">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M4 21h4V9H4v12Zm6 0h4V3h-4v18Zm6 0h4v-8h-4v8Z"/></svg>
@@ -95,7 +104,10 @@
   <div id="tab-hdrs">
     <button class="tab-hdr active" data-view="comuni">Comuni</button>
     <button class="tab-hdr" data-view="province">Province</button>
+    <button class="tab-hdr" data-view="redditi">Redditi</button>
+    <button class="tab-hdr" data-view="redditiComuni">Redditi comuni</button>
     <button class="tab-hdr" data-view="bivariata">Bivariata</button>
+    <button class="tab-hdr" data-view="bivariataReddito">Bivariata reddito</button>
     <button class="tab-hdr" data-view="capoluoghi">Capoluoghi</button>
   </div>
 
@@ -154,8 +166,8 @@
         <div class="row row-static"><span class="swatch" style="background:#5a6472"></span><span>Nessuna rilevazione NIC</span></div>
         <button class="legend-clear" data-legend-clear="province" style="display:none">&times; rimuovi filtro classe</button>
       </div>
-      <div id="province-warning">
-        ⚠ Il NIC Istat varia pochissimo tra province (2,4 punti in tutta Italia): questa vista è un dato reale ma <b>corregge quasi nulla</b> per il costo della vita — riflette soprattutto il reddito nominale. Per una stima del potere d'acquisto più realistica, usa la vista <b>Comuni</b>.
+      <div class="view-warning">
+        ⚠ Il NIC Istat varia pochissimo tra province (2,4 punti in tutta Italia): questa vista è un dato reale ma <b>corregge quasi nulla</b> per il costo della vita, riflette soprattutto il reddito nominale. Per una stima del potere d'acquisto più realistica, usa la vista <b>Comuni</b>.
       </div>
 
       <hr class="panel-sep">
@@ -174,6 +186,116 @@
           <ol class="ranking-list ranking-bottom" data-scope="province"></ol>
         </div>
         <p class="ranking-note" data-scope="province"></p>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="redditi">
+      <div class="panel-title-box">
+        <h1>Dove si guadagna di più</h1>
+        <p class="panel-tagline">Reddito alto non significa sempre potere d'acquisto alto. Dipende da quanto costa vivere in quel posto.</p>
+        <p>Reddito medio IRPEF 2024 per contribuente, per provincia: dato nominale MEF, <b>non</b> corretto per il costo della vita. Clicca su una provincia per i dettagli.</p>
+      </div>
+      <div class="legend" data-legend-view="redditi">
+        <div class="title">Reddito medio annuo</div>
+        <div class="row"><span class="swatch" style="background:#1e133a"></span><span>31.000 € e oltre</span></div>
+        <div class="row"><span class="swatch" style="background:#342168"></span><span>29.000 – 31.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#345298"></span><span>27.000 – 29.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#4080a5"></span><span>25.000 – 27.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#4ca69e"></span><span>23.000 – 25.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#74be9e"></span><span>21.000 – 23.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#b2d8b6"></span><span>19.000 – 21.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#e0ead2"></span><span>meno di 19.000 €</span></div>
+      </div>
+
+      <div class="stat-card">
+        <p class="stat-card-title">Il divario Nord–Sud</p>
+        <p class="stat-card-val">−15%</p>
+        <p class="stat-card-note">Il reddito medio nelle province del Mezzogiorno è inferiore di circa il 15% rispetto alla media nazionale.</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-card-title">Resta Milano in testa</p>
+        <p class="stat-card-val">€ 33.831</p>
+        <p class="stat-card-note">Anche correggendo per il costo della vita locale, Milano rimane la provincia col potere d'acquisto più alto.</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-card-title">L'estremo opposto</p>
+        <p class="stat-card-val">€ 17.765</p>
+        <p class="stat-card-note">Crotone, la provincia col reddito medio più basso: circa un terzo in meno di Milano.</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-card-title">Copertura del dato</p>
+        <p class="stat-card-val">77 / 107</p>
+        <p class="stat-card-note">L'indice NIC Istat è rilevato direttamente solo nei capoluoghi di provincia: per le altre 30 province il dato resta assente, non stimato.</p>
+      </div>
+
+      <div class="view-warning">
+        ⚠ Questa vista mostra il reddito <b>nominale</b>, non il potere d'acquisto: un reddito alto in una zona molto cara può valere meno di uno più basso in una zona economica. Per il potere d'acquisto reale usa la vista <b>Comuni</b> o <b>Province</b>.
+      </div>
+
+      <hr class="panel-sep">
+      <div class="ranking-block">
+        <div class="ranking-block-header">
+          <h3>Classifiche e grafici</h3>
+          <div class="ranking-subtabs" data-scope="redditi">
+            <button class="ranking-subtab active" data-unit="redditi">Province</button>
+            <button class="ranking-subtab" data-unit="redditi_regioni">Regioni</button>
+          </div>
+        </div>
+        <button class="ranking-viewport-toggle" data-scope="redditi" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <p class="ranking-subtitle" data-scope="redditi"></p>
+        <div class="ranking-section">
+          <div class="ranking-section-title ranking-section-title--best">▲ Reddito più alto</div>
+          <ol class="ranking-list ranking-top" data-scope="redditi"></ol>
+        </div>
+        <div class="ranking-section">
+          <div class="ranking-section-title ranking-section-title--worst">▼ Reddito più basso</div>
+          <ol class="ranking-list ranking-bottom" data-scope="redditi"></ol>
+        </div>
+        <p class="ranking-note" data-scope="redditi"></p>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="redditiComuni">
+      <div class="panel-title-box">
+        <h1>Dove si guadagna di più</h1>
+        <p class="panel-tagline">Reddito alto non significa sempre potere d'acquisto alto. Dipende da quanto costa vivere in quel posto.</p>
+        <p>Reddito medio IRPEF 2024 per contribuente, per comune: dato nominale MEF, <b>non</b> corretto per il costo della vita. Clicca su un comune per i dettagli.</p>
+      </div>
+      <div class="legend" data-legend-view="redditiComuni">
+        <div class="title">Reddito medio annuo</div>
+        <div class="row"><span class="swatch" style="background:#1e133a"></span><span>29.000 € e oltre</span></div>
+        <div class="row"><span class="swatch" style="background:#342168"></span><span>27.000 – 29.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#345298"></span><span>25.000 – 27.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#4080a5"></span><span>23.000 – 25.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#4ca69e"></span><span>21.000 – 23.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#74be9e"></span><span>19.000 – 21.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#b2d8b6"></span><span>17.000 – 19.000 €</span></div>
+        <div class="row"><span class="swatch" style="background:#e0ead2"></span><span>meno di 17.000 €</span></div>
+      </div>
+      <div class="view-warning">
+        ⚠ Reddito <b>nominale</b>, non potere d'acquisto. Nei comuni molto piccoli la media può essere statisticamente rumorosa (poche dichiarazioni estreme la spostano molto): le classifiche qui sotto includono solo comuni con almeno 1.000 contribuenti, ma la mappa mostra tutti i comuni, compresi quelli più piccoli.
+      </div>
+
+      <hr class="panel-sep">
+      <div class="ranking-block">
+        <div class="ranking-block-header">
+          <h3>Classifiche e grafici</h3>
+          <div class="ranking-subtabs" data-scope="redditiComuni">
+            <button class="ranking-subtab active" data-unit="redditi_comuni">Comuni</button>
+            <button class="ranking-subtab" data-unit="redditi_regioni">Regioni</button>
+          </div>
+        </div>
+        <button class="ranking-viewport-toggle" data-scope="redditiComuni" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <p class="ranking-subtitle" data-scope="redditiComuni"></p>
+        <div class="ranking-section">
+          <div class="ranking-section-title ranking-section-title--best">▲ Reddito più alto</div>
+          <ol class="ranking-list ranking-top" data-scope="redditiComuni"></ol>
+        </div>
+        <div class="ranking-section">
+          <div class="ranking-section-title ranking-section-title--worst">▼ Reddito più basso</div>
+          <ol class="ranking-list ranking-bottom" data-scope="redditiComuni"></ol>
+        </div>
+        <p class="ranking-note" data-scope="redditiComuni"></p>
       </div>
     </div>
 
@@ -230,6 +352,67 @@
         <button class="ranking-viewport-toggle" data-scope="bivariata" aria-pressed="false">📍 Solo quest'area della mappa</button>
         <p class="ranking-subtitle">Le 9 classi dell'incrocio reddito × costo vita. Clicca su una classe per vedere i comuni con potere d'acquisto più alto in quella classe.</p>
         <div class="bivar-class-accordion" id="bivar-class-accordion"></div>
+        <p class="ranking-note">Solo comuni con almeno 1.000 contribuenti, per evitare medie statisticamente rumorose sui centri molto piccoli.</p>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="bivariataReddito">
+      <div class="panel-title-box">
+        <h1>Reddito nominale vs potere d'acquisto</h1>
+        <p class="panel-tagline">Reddito alto non significa sempre potere d'acquisto alto. Dipende da quanto costa vivere in quel posto.</p>
+        <p>Incrocio fra reddito medio nominale e potere d'acquisto reale già corretto (terzili): mostra dove i due indicatori divergono di più. Clicca su un comune per i dettagli.</p>
+      </div>
+      <div id="legend-bivar-reddito">
+        <div class="bivar-title">Classe bivariata</div>
+        <div class="bivar-sub">Click su una cella per filtrare la mappa</div>
+        <div class="bivar-colheads">
+          <span></span><span>basso</span><span>medio</span><span>alto</span>
+        </div>
+        <div class="bivar-body">
+          <div class="bivar-ylabel">potere d'acquisto &uarr;</div>
+          <div class="bivar-rows">
+            <div class="bivar-rowline">
+              <span class="rowlabel">alto</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="13" style="background:#64acbe" title="Reddito nominale basso · Potere d'acquisto alto"></span>
+                <span class="bs" data-class="23" style="background:#627f8c" title="Reddito nominale medio · Potere d'acquisto alto"></span>
+                <span class="bs" data-class="33" style="background:#574249" title="Reddito nominale alto · Potere d'acquisto alto"></span>
+              </div>
+            </div>
+            <div class="bivar-rowline">
+              <span class="rowlabel">medio</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="12" style="background:#b0d5df" title="Reddito nominale basso · Potere d'acquisto medio"></span>
+                <span class="bs" data-class="22" style="background:#ad9ea5" title="Reddito nominale medio · Potere d'acquisto medio"></span>
+                <span class="bs" data-class="32" style="background:#985356" title="Reddito nominale alto · Potere d'acquisto medio"></span>
+              </div>
+            </div>
+            <div class="bivar-rowline">
+              <span class="rowlabel">basso</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="11" style="background:#e8e8e8" title="Reddito nominale basso · Potere d'acquisto basso"></span>
+                <span class="bs" data-class="21" style="background:#e4acac" title="Reddito nominale medio · Potere d'acquisto basso"></span>
+                <span class="bs" data-class="31" style="background:#c85a5a" title="Reddito nominale alto · Potere d'acquisto basso"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bivar-xlabel">reddito nominale &rarr;</div>
+        <div class="bivar-hover"></div>
+        <button class="bivar-clear" style="display:none">&times; rimuovi filtro classe</button>
+      </div>
+      <div class="view-warning">
+        ⚠ La cella più interessante è "reddito alto · potere d'acquisto basso" (in alto a destra nella lettura a specchio, riga bassa qui): reddito dichiarato sopra la media, ma vita cara abbastanza da annullarlo: l'opposto di quello che ci si aspetterebbe guardando solo la vista Redditi.
+      </div>
+
+      <hr class="panel-sep">
+      <div class="ranking-block">
+        <div class="ranking-block-header">
+          <h3>Classifica per classe</h3>
+        </div>
+        <button class="ranking-viewport-toggle" data-scope="bivariataReddito" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <p class="ranking-subtitle">Le 9 classi dell'incrocio reddito nominale × potere d'acquisto reale. Clicca su una classe per vedere i comuni con potere d'acquisto più alto in quella classe.</p>
+        <div class="bivar-class-accordion" id="bivar-class-accordion-reddito"></div>
         <p class="ranking-note">Solo comuni con almeno 1.000 contribuenti, per evitare medie statisticamente rumorose sui centri molto piccoli.</p>
       </div>
     </div>
@@ -324,7 +507,7 @@
 
     <figure class="note-fig">
       <img src="img/guide/01-menu-dial.png" alt="Screenshot: mappa con il menu a tendina aperto in alto a sinistra" loading="lazy">
-      <figcaption>Il pulsante rotondo in alto a sinistra apre il menu con le viste (Comuni / Province / Bivariata), il tasto Home per tornare all'inquadratura iniziale, il tema chiaro/scuro, le Classifiche e questa guida.</figcaption>
+      <figcaption>Il pulsante rotondo in alto a sinistra apre il menu con le viste (Comuni / Province / Redditi / Redditi comuni / Bivariata), il tasto Home per tornare all'inquadratura iniziale, il tema chiaro/scuro, le Classifiche e questa guida.</figcaption>
     </figure>
 
     <h3><span class="note-h-ico">📊</span>Le classifiche</h3>
@@ -335,6 +518,9 @@
       <img src="img/guide/02-classifiche.png" alt="Screenshot: pannello classifiche con legenda, ricerca viewport e liste a barre" loading="lazy">
       <figcaption>Legenda, interruttore "solo quest'area" e classifica a barre: la lunghezza della barra è proporzionale al valore.</figcaption>
     </figure>
+
+    <h3><span class="note-h-ico">💶</span>Le viste Redditi</h3>
+    <p>Le viste <b>Redditi</b> (province) e <b>Redditi comuni</b> mostrano il reddito medio IRPEF <b>nominale</b>, senza alcuna correzione per il costo della vita: rispondono a "dove si guadagna di più", non a "dove si vive meglio". La palette è diversa apposta (viola→blu→verde invece di rosso→verde) per non confonderle con le viste di potere d'acquisto reale. La vista Redditi comuni riusa gli stessi dati geografici della vista Comuni, quindi si apre istantaneamente.</p>
 
     <h3><span class="note-h-ico">🔎</span>La barra di ricerca geografica</h3>
     <p>In basso trovi la barra di ricerca: digita il nome di una regione, provincia o comune per saltarci direttamente sopra. L'icona a imbuto apre i <b>filtri</b> a cascata (Regione → Provincia → Comune): scegli una regione per restringere l'elenco delle province, poi una provincia per restringere i comuni, e usa <b>↗ Zoom selezione</b> per inquadrare l'area scelta sulla mappa. Le stesse selezioni valgono sia per la vista Comuni sia per la vista Province.</p>
@@ -363,24 +549,37 @@
 
     <h3>Formula</h3>
     <p><code>potere_acquisto_reale = reddito_medio × [costo_vita_italia_media / costo_vita_stimato]</code></p>
-    <p>Il reddito medio è corretto al ribasso dove il costo della vita è sopra la media nazionale, e al rialzo dove è sotto — così un reddito nominale alto in una zona molto cara può risultare in un potere d'acquisto reale inferiore a un reddito più basso in una zona economica.</p>
+    <p>Il reddito medio è corretto al ribasso dove il costo della vita è sopra la media nazionale, e al rialzo dove è sotto così un reddito nominale alto in una zona molto cara può risultare in un potere d'acquisto reale inferiore a un reddito più basso in una zona economica.</p>
 
     <h3>Perché due viste, con due costo-vita diversi</h3>
-    <p>Il NIC Istat (indice prezzi al consumo) misura la <b>variazione</b> dei prezzi nel tempo in ciascuna città rispetto al proprio anno base — non il <b>livello assoluto</b> del costo della vita, quindi non è confrontabile direttamente fra città diverse: nei capoluoghi varia solo tra 102,3 e 104,7 (spread 2,4 punti), un intervallo troppo stretto per spiegare differenze reali di costo della vita. Per questo la mappa offre due viste, coerenti coi rispettivi dati:</p>
+    <p>Il NIC Istat (indice prezzi al consumo) misura la <b>variazione</b> dei prezzi nel tempo in ciascuna città rispetto al proprio anno base non il <b>livello assoluto</b> del costo della vita, quindi non è confrontabile direttamente fra città diverse: nei capoluoghi varia solo tra 102,3 e 104,7 (spread 2,4 punti), un intervallo troppo stretto per spiegare differenze reali di costo della vita. Per questo la mappa offre due viste, coerenti coi rispettivi dati:</p>
     <table>
       <tr><th>Vista</th><th>Costo della vita</th><th>Natura del dato</th></tr>
       <tr><td><b>Comuni</b></td><td>Valore immobiliare medio OMI, come differenziale rispetto alla media nazionale</td><td>Stima (proxy), ma con variazione geografica reale (225–10.767 €/mq)</td></tr>
-      <tr><td><b>Province</b></td><td>NIC Istat ufficiale, dove rilevato</td><td>Dato diretto, nessuna stima — ma correzione minima per il motivo sopra</td></tr>
+      <tr><td><b>Province</b></td><td>NIC Istat ufficiale, dove rilevato</td><td>Dato diretto, nessuna stima, ma correzione minima per il motivo sopra</td></tr>
       <tr><td><b>Bivariata</b></td><td>Stessa stima OMI della vista Comuni</td><td>Mostra reddito e costo vita come due terzili incrociati, invece di comprimerli nell'indice unico</td></tr>
+      <tr><td><b>Redditi</b></td><td>Nessuna: reddito nominale</td><td>Reddito medio provinciale dichiarato, senza correzione. Tutte le 107 province, nessun dato mancante</td></tr>
+      <tr><td><b>Redditi comuni</b></td><td>Nessuna: reddito nominale</td><td>Reddito medio comunale dichiarato, senza correzione. Stessa base geografica della vista Comuni</td></tr>
     </table>
 
-    <h3>Vista Bivariata — come si legge</h3>
-    <p>Reddito medio e costo della vita stimato (OMI) sono divisi ciascuno in tre terzili (basso/medio/alto su tutti i 7.890 comuni) e incrociati in una griglia 3×3: 9 colori invece dei 5 dell'indice unico. Utile per distinguere comuni dove le due variabili si compensano (reddito alto e costo alto, o reddito basso e costo basso — entrambi vicini alla media nel potere d'acquisto) da quelli dove non si compensano (reddito basso ma costo alto, o viceversa — i casi più interessanti, invisibili nell'indice unico).</p>
+    <h3>Vista Redditi / Redditi comuni: reddito nominale, non potere d'acquisto</h3>
+    <p>Queste due viste mostrano <code>reddito_medio_prov</code> / <code>reddito_medio_euro</code> così come dichiarati al MEF, <b>senza</b> applicare la formula di correzione per il costo della vita usata nelle altre viste. Sono la lettura più diretta e immediata ("dove si guadagna di più"), utile quando l'obiettivo non è stimare il potere d'acquisto ma confrontare i redditi dichiarati fra territori: lo stesso taglio di molte infografiche pubbliche sul reddito medio per provincia.</p>
+    <p>La palette è una rampa sequenziale a 8 classi fisse in € (viola scuro = reddito più alto, verde chiaro = più basso), diversa dalla palette rosso→verde delle altre viste per non generare confusione fra le due letture. Le soglie sono calibrate separatamente sulle due distribuzioni: quella provinciale parte da 19.000 €, quella comunale da 17.000 €, perché a livello di singolo comune il minimo scende molto più in basso (7.500 €) e la coda dei redditi alti è più lunga.</p>
+    <p>Le classifiche della vista Redditi comuni includono solo i comuni con almeno 1.000 contribuenti, per lo stesso motivo delle altre classifiche comunali: nei comuni piccolissimi la media può essere dominata da poche dichiarazioni estreme (es. Maccastorna, 76 contribuenti, media 72.684 €, non un indicatore di ricchezza diffusa). La mappa, a differenza delle classifiche, mostra comunque tutti i comuni.</p>
 
-    <h3>Vista Comuni — come si stima il costo della vita</h3>
+    <h3><span class="note-h-ico">🏘️</span>Attenzione ai comuni "dormitorio"</h3>
+    <p>Nella mappa comunale, alcuni comuni piccolissimi vicino alle grandi città (es. Basiglio, Cusago, Peschiera Borromeo nella cintura di Milano) compaiono con un reddito medio altissimo. Non è un boom economico locale: sono comuni dove vivono poche famiglie molto ricche che lavorano altrove, quindi la media si alza tantissimo pur non riflettendo un'economia locale forte. Le classifiche filtrano già questi casi (soglia minima 1.000 contribuenti), ma la <b>mappa mostra tutti i comuni</b>, compresi quelli piccolissimi: un colore molto scuro isolato vicino a una grande città è spesso questo effetto, non un polo economico a sé.</p>
+
+    <h3><span class="note-h-ico">📉</span>Il reddito dichiarato non è tutto il reddito reale</h3>
+    <p>Il reddito IRPEF non cattura l'intera ricchezza di un territorio: alcuni redditi da capitale sono tassati separatamente (cedolare secca e simili, quindi non figurano nel reddito IRPEF), e a questo si aggiungono evasione ed economia sommersa. Questi fenomeni pesano di più, sistematicamente, nelle regioni del Sud. Il divario Nord-Sud che mostriamo nella vista Redditi (circa −15%) è quindi probabilmente <b>sottostimato</b> rispetto al divario reale nei redditi dichiarabili, non sovrastimato: il dato che vedi in mappa è, se mai, più prudente della realtà.</p>
+
+    <h3>Vista Bivariata, come si legge</h3>
+    <p>Reddito medio e costo della vita stimato (OMI) sono divisi ciascuno in tre terzili (basso/medio/alto su tutti i 7.890 comuni) e incrociati in una griglia 3×3: 9 colori invece dei 5 dell'indice unico. Utile per distinguere comuni dove le due variabili si compensano (reddito alto e costo alto, o reddito basso e costo basso, entrambi vicini alla media nel potere d'acquisto) da quelli dove non si compensano (reddito basso ma costo alto, o viceversa, i casi più interessanti, invisibili nell'indice unico).</p>
+
+    <h3>Vista Comuni, come si stima il costo della vita</h3>
     <p>Si usa il valore OMI medio (€/m², Agenzia delle Entrate, abitazioni civili stato normale) del comune, rapportato alla media nazionale OMI. Dove OMI manca o è nullo (es. mercato immobiliare fermo in aree post-sisma) si usa la media provinciale, poi quella nazionale.</p>
 
-    <h3>Vista Province — come si legge</h3>
+    <h3>Vista Province, come si legge</h3>
     <p>Reddito medio provinciale (aggregato pesato sui contribuenti dei comuni della provincia) corretto per il NIC ufficiale del capoluogo, disponibile solo per le <b>77 province con rilevazione diretta</b>. Le altre 30 restano grigie ("nessuna rilevazione NIC") invece di ricevere una stima: 27 perché Istat non rileva il NIC nel capoluogo, 2 (Savona, Taranto) perché il dato è assente in modo strutturale in tutti i mesi disponibili (gen–lug 2026), 1 (Olbia-Tempio) perché la provincia rilevata da Istat è stata abolita nel 2016.</p>
 
     <h3>Fonti dei dati e copertura</h3>
@@ -425,6 +624,6 @@
   </div>
 </div>
 
-<script src="js/main.js?v=16"></script>
+<script src="js/main.js?v=19"></script>
 </body>
 </html>

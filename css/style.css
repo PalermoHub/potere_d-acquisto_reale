@@ -37,7 +37,14 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
   max-height:0;opacity:0;overflow:hidden;margin-top:0;
   transition:max-height .3s ease,opacity .2s ease,margin-top .3s ease;
 }
-.dial-items.open{max-height:400px;opacity:1;margin-top:8px}
+/* 600px copre tutti gli item attuali (10 × 38px + 9 gap = 452px) con margine
+   per aggiunte future; su schermi bassi si aggiunge lo scroll invece di tagliare
+   in silenzio l'ultimo pulsante (successo con l'aggiunta delle viste Redditi). */
+.dial-items.open{
+  max-height:min(600px, calc(100vh - 100px));
+  opacity:1;margin-top:8px;overflow-y:auto;
+  scrollbar-width:thin;
+}
 .dial-item{
   width:38px;height:38px;border-radius:50%;background:#fff;border:none;color:#333;
   display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
@@ -53,11 +60,11 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 .dial-item:hover{background:#f2f2f2}
 .dial-item.active{background:var(--accent);color:#fff}
 
-#province-warning{
+.view-warning{
   margin-top:12px;background:#3a2a0e;border:1px solid #7a5a1a;color:#f0c869;
   border-radius:10px;padding:9px 12px;font-size:11.5px;line-height:1.4;
 }
-#province-warning b{color:#ffd98a}
+.view-warning b{color:#ffd98a}
 
 /* ── Pannello dx: tab Comuni / Province / Bivariata ─────────────────────
    Su desktop è apribile/richiudibile con la linguetta (aperto di default);
@@ -84,9 +91,9 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 #panel-toggle svg{transition:transform .28s ease}
 #side-panel.closed #panel-toggle svg{transform:rotate(180deg)}
 
-#tab-hdrs{display:flex;flex:0 0 auto;border-bottom:1px solid var(--panel-border)}
+#tab-hdrs{display:flex;flex-wrap:wrap;flex:0 0 auto;border-bottom:1px solid var(--panel-border)}
 .tab-hdr{
-  flex:1;padding:10px 4px;background:none;border:none;border-bottom:2px solid transparent;
+  flex:1 1 33.333%;padding:10px 4px;background:none;border:none;border-bottom:2px solid transparent;
   color:var(--text-dim);font-size:11.5px;font-weight:700;letter-spacing:.02em;
   cursor:pointer;font-family:inherit;transition:color .15s,border-color .15s;
 }
@@ -100,6 +107,7 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 .panel-title-box{margin-bottom:14px}
 .panel-title-box h1{font-size:15px;margin:0 0 4px;font-weight:700;letter-spacing:.2px}
 .panel-title-box p{font-size:12px;margin:0;color:var(--text-dim);line-height:1.4}
+.panel-title-box .panel-tagline{color:var(--accent);font-weight:700;margin:0 0 6px;line-height:1.4}
 
 .legend{font-size:12px}
 .legend .title{font-weight:700;margin-bottom:8px}
@@ -147,6 +155,11 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 .bivar-clear:hover{color:#fff;border-color:#fff}
 
 .panel-sep{border:none;border-top:1px solid var(--panel-border);margin:16px 0}
+
+.stat-card{background:var(--overlay-1);border:1px solid var(--panel-border);border-radius:8px;padding:10px 12px;margin-top:10px}
+.stat-card-title{font-size:12px;font-weight:700;margin:0 0 4px}
+.stat-card-val{font-size:21px;font-weight:800;color:var(--accent);margin:0 0 4px;font-variant-numeric:tabular-nums}
+.stat-card-note{font-size:11.5px;color:var(--text-dim);line-height:1.4;margin:0}
 
 .ranking-block-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .ranking-block-header h3{font-size:12.5px;font-weight:700;color:var(--text);margin:0}
