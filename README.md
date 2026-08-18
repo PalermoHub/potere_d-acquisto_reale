@@ -20,10 +20,26 @@ La mappa offre due viste, con due basi di calcolo diverse per il costo della vit
 |---|---|---|
 | Costo della vita | Valore immobiliare medio OMI, come differenziale rispetto alla media nazionale | NIC Istat ufficiale (indice prezzi al consumo), dove rilevato |
 | Natura del dato | **Stima** (proxy), ma con variazione geografica reale (225–10.767 €/mq) | **Dato diretto**, nessuna stima |
-| Copertura | 7.890 comuni | 77 province su 107 (dato reale); le altre 30 restano grigie, senza fallback (27 mai rilevate da Istat, 2 con dato mancante nel mese corrente, 1 provincia abolita) |
+| Copertura | 7.890 comuni | 77 province su 107 (dato reale); le altre 30 restano grigie, senza fallback (27 mai rilevate da Istat, 2 — Savona e Taranto — con dato assente in modo strutturale in tutti i mesi verificati, 1 provincia abolita) |
 | Correzione tipica | Forte: azzera quasi il divario nominale Nord-Sud (~25% → ~2,5%, vedi [Risultati](#risultati-e-verifiche-fatte)) | Minima: il NIC varia solo 2,4 punti in tutta Italia, quindi la vista riflette soprattutto il reddito nominale |
 
 **Perché non un'unica vista "giusta"**: il NIC è un indice di *variazione* dei prezzi nel tempo (ogni città riparte da 100 nel proprio anno base), non di *livello* comparabile fra città — non è quindi un proxy valido del costo della vita assoluto a livello comunale, anche se è l'unico dato Istat "reale" disponibile. L'OMI ha invece una variazione geografica enorme (quasi 50×) ma è comunque una stima indiretta (il costo della vita non è fatto solo di casa). La mappa mostra onestamente entrambe, etichettate per quello che sono.
+
+---
+
+## Vista Redditi (reddito nominale, senza correzione)
+
+Oltre alle due viste di **potere d'acquisto reale**, la mappa offre due viste di **reddito nominale**, a livello di provincia (**Redditi**) e di comune (**Redditi comuni**): rispondono alla domanda più semplice "dove si guadagna di più", senza alcuna correzione per il costo della vita — lo stesso taglio delle infografiche classiche sul reddito medio per territorio (es. le mappe INPS/MEF sulla retribuzione media per provincia).
+
+| | **Vista Redditi** | **Vista Redditi comuni** |
+|---|---|---|
+| Metrica | `reddito_medio_prov` (MEF, anno d'imposta 2024) | `reddito_medio_euro` (MEF, anno d'imposta 2024) |
+| Granularità | 107 province | 7.890 comuni |
+| Copertura mappa | Tutte le 107 (nessun dato mancante) | Tutti i comuni con dato MEF |
+| Copertura classifiche | Tutte le 107 | Solo comuni con ≥1.000 contribuenti (evita medie rumorose sui centri minuscoli — es. Maccastorna, 76 contribuenti, media nominale 72.684 €) |
+| Palette | Rampa viola→blu→verde a 8 classi fisse in €, tinta e ordine (scuro = reddito più alto) ripresi da un'infografica di riferimento su scala nazionale | Stessa rampa, soglie più basse (la distribuzione comunale parte da 7.500 € e ha una coda di piccoli comuni molto ricchi) |
+
+A differenza delle viste Comuni/Province, qui il colore riflette il reddito **dichiarato**, non il potere d'acquisto: un reddito alto in una zona molto cara può valere meno di uno più basso in una zona economica — l'avviso è mostrato in mappa in entrambe le viste. Le classifiche offrono anche un sotto-livello **Regioni** (media pesata sui contribuenti).
 
 ---
 
@@ -52,7 +68,9 @@ scripts/
 ├── 02b_process_nic.py           Elabora CSV NIC Istat (SDMX) per gli 80 capoluoghi con rilevazione diretta
 ├── 03_build_potere_acquisto.py  Join MEF+OMI+confini comunali, calcolo formula, classi quantili → vista Comuni
 ├── 04_export_pmtiles.py         GeoParquet → GeoJSON → PMTiles (tippecanoe), per comuni e/o province
-└── 05_build_province.py         Aggrega MEF per provincia, join NIC reale, calcolo formula → vista Province
+├── 05_build_province.py         Aggrega MEF per provincia, join NIC reale, calcolo formula → vista Province
+└── 08_build_rankings.py         Estrae dist/geo/rankings.json: elenchi comuni/province/regioni per le classifiche
+                                  (potere d'acquisto reale e reddito nominale, viste Redditi/Redditi comuni incluse)
 ```
 
 ### Eseguire da zero
@@ -73,8 +91,11 @@ python3 scripts/03_build_potere_acquisto.py
 # 5. Vista Province: aggregazione + NIC reale
 python3 scripts/05_build_province.py
 
-# 4. Export tiles (entrambe le viste)
+# 4. Export tiles (tutte le viste)
 python3 scripts/04_export_pmtiles.py tutti
+
+# 8. Classifiche per il pannello destro (Comuni/Province/Regioni/Redditi/Redditi comuni/Capoluoghi)
+python3 scripts/08_build_rankings.py
 ```
 
 Requisiti: Python 3 con `duckdb` e `pandas`, più i binari `tippecanoe`, `pmtiles`, `ogr2ogr`/`ogrinfo` (GDAL) nel `PATH`.
@@ -92,6 +113,7 @@ pip install duckdb pandas
 
 - **Codici comune**: tre fonti diverse (MEF, OMI, confini ISTAT) usano incarnazioni leggermente diverse del codice ISTAT comune (`pro_com`, 6 cifre zero-padded). La Sardegna è il caso peggiore: OMI e NIC usano ancora i codici provincia pre-riforma 2016 per diversi comuni/capoluoghi (es. Villasimius, Olbia, Sassari). Risolto con crosswalk a cascata sulle colonne storiche dell'elenco ISTAT (`Codice Comune numerico con 107/110 Province`).
 - **Confini in proiezione errata**: lo shapefile ISTAT `*_WGS84.shp` è in realtà in **EPSG:32632** (UTM32N), non EPSG:4326 nonostante il nome — richiede `ST_Transform` esplicito prima dell'export, altrimenti tippecanoe scarta metà delle geometrie.
+- **NIC assente per Savona e Taranto — verificato strutturale**: nel dataflow `167_745` le due province hanno sempre `OBS_VALUE` vuoto (flag `g`) da gennaio a luglio 2026, riscontro identico su ogni mese testato via API SDMX. Il dataflow non copre nemmeno il 2025 (base 2025=100 parte da gennaio 2026). Non è quindi un buco temporaneo da colmare riesportando un mese diverso.
 - **Micro-comuni rumorosi**: comuni con pochi contribuenti possono avere una media reddituale statisticamente instabile (un solo contribuente ad alto reddito può spostarla sensibilmente). Non filtrati, ma segnalati in nota metodologica.
 - **OMI mancante o zero**: comuni con mercato immobiliare fermo (es. aree post-sisma: Accumoli, Preci, Gibellina) hanno OMI legittimamente nullo. Fallback a cascata: media provinciale → media nazionale, con la fonte usata tracciata esplicitamente nel campo `fonte_costo_vita` di ogni comune.
 - **NIC come proxy comunale — scartato**: un primo tentativo usava `NIC_stimato(comune) = NIC(capoluogo) × [OMI(comune)/OMI(capoluogo)]^k`. Verificato empiricamente che il NIC varia troppo poco fra capoluoghi (102,3–104,7, spread 2,4 punti) per essere un proxy utile del *livello* di costo della vita — è un indice di *variazione* nel tempo, non di livello comparabile fra città. Abbandonato in favore delle due viste separate.
@@ -102,10 +124,13 @@ pip install duckdb pandas
 
 `index.html`, autosufficiente: **MapLibre GL JS** + **PMTiles** (via CDN, con Subresource Integrity), basemap **CartoDB Positron** (chiara), nessuna build step.
 
-- Toggle Comuni/Province in alto a sinistra
-- Choropleth a 5 classi quantili, palette diverging rosso→verde (ColorBrewer RdYlGn)
-- Popup al click con dettaglio per comune/provincia, inclusa la fonte del dato costo-vita
-- Banner di avviso permanente nella vista Province (correzione minima)
+- Sei viste (menu a tendina in alto a sinistra e tab nel pannello destro): **Comuni**, **Province**, **Redditi**, **Redditi comuni**, **Bivariata**, **Capoluoghi**
+- Comuni/Province/Bivariata: choropleth a 5 classi quantili, palette diverging rosso→verde (ColorBrewer RdYlGn), sul potere d'acquisto reale
+- Redditi/Redditi comuni: choropleth a 8 classi fisse in €, rampa sequenziale viola→blu→verde, sul reddito nominale (non corretto)
+- Redditi comuni riusa la stessa sorgente vettoriale della vista Comuni (nessun tile duplicato): solo lo stile del layer cambia
+- Popup al click con dettaglio per comune/provincia, inclusa la fonte del dato costo-vita (viste Comuni/Province) o il reddito nominale (viste Redditi)
+- Banner di avviso permanente nelle viste Province (correzione minima) e Redditi/Redditi comuni (dato nominale, non potere d'acquisto)
+- Classifiche con sotto-livelli Comuni/Regioni o Province/Regioni, filtro "solo quest'area della mappa" e ricerca geografica condivisa fra le viste
 - Pannello "Note metodologiche" completo (formula, fonti, limiti, licenza)
 
 ### Nota tecnica: server locale

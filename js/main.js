@@ -164,6 +164,7 @@ function popupComuni(props) {
     <div class="pop-row"><span class="k">Valore immobiliare (OMI)</span><span class="v">${fmtEuroMq(props.omi_eur_mq)}</span></div>
     <div class="pop-row"><span class="k">Fonte costo vita</span><span class="v">${FONTE_LABEL_COMUNI[props.fonte_costo_vita] || props.fonte_costo_vita}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
     ${fonteWarn}
   `;
 }
@@ -193,6 +194,7 @@ function popupBivariata(props) {
     <div class="pop-row"><span class="k">Costo vita stimato (OMI)</span><span class="v">${fmtEuroMq(props.costo_vita_stimato)} <i>(${TERZILE_LABEL[props.terzile_costo_vita]})</i></span></div>
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
   `;
 }
 
@@ -207,6 +209,7 @@ function popupBivariataReddito(props) {
     <div class="pop-row"><span class="k">Reddito medio IRPEF (nominale)</span><span class="v">${fmtEuro(props.reddito_medio_euro)} <i>(${TERZILE_LABEL[props.terzile_reddito_nom]})</i></span></div>
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)} <i>(${TERZILE_LABEL[props.terzile_pot_acquisto]})</i></span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
   `;
 }
 
@@ -240,6 +243,7 @@ function popupRedditiComuni(props) {
     <div class="pop-row"><span class="k">Regione</span><span class="v">${REGIONE_LABEL(props.regione)}</span></div>
     <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
   `;
 }
 

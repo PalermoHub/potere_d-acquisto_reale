@@ -507,7 +507,7 @@
 
     <figure class="note-fig">
       <img src="img/guide/01-menu-dial.png" alt="Screenshot: mappa con il menu a tendina aperto in alto a sinistra" loading="lazy">
-      <figcaption>Il pulsante rotondo in alto a sinistra apre il menu con le viste (Comuni / Province / Redditi / Redditi comuni / Bivariata), il tasto Home per tornare all'inquadratura iniziale, il tema chiaro/scuro, le Classifiche e questa guida.</figcaption>
+      <figcaption>Il pulsante rotondo in alto a sinistra apre il menu con le viste (Comuni / Province / Redditi / Redditi comuni / Bivariata / Bivariata reddito), il tasto Home per tornare all'inquadratura iniziale, il tema chiaro/scuro, le Classifiche e questa guida.</figcaption>
     </figure>
 
     <h3><span class="note-h-ico">📊</span>Le classifiche</h3>
@@ -558,6 +558,7 @@
       <tr><td><b>Comuni</b></td><td>Valore immobiliare medio OMI, come differenziale rispetto alla media nazionale</td><td>Stima (proxy), ma con variazione geografica reale (225–10.767 €/mq)</td></tr>
       <tr><td><b>Province</b></td><td>NIC Istat ufficiale, dove rilevato</td><td>Dato diretto, nessuna stima, ma correzione minima per il motivo sopra</td></tr>
       <tr><td><b>Bivariata</b></td><td>Stessa stima OMI della vista Comuni</td><td>Mostra reddito e costo vita come due terzili incrociati, invece di comprimerli nell'indice unico</td></tr>
+      <tr><td><b>Bivariata reddito</b></td><td>Stessa stima OMI della vista Comuni</td><td>Incrocia reddito nominale (non corretto) e potere d'acquisto reale (corretto), invece di reddito e costo vita: mostra dove i due indicatori più divergono</td></tr>
       <tr><td><b>Redditi</b></td><td>Nessuna: reddito nominale</td><td>Reddito medio provinciale dichiarato, senza correzione. Tutte le 107 province, nessun dato mancante</td></tr>
       <tr><td><b>Redditi comuni</b></td><td>Nessuna: reddito nominale</td><td>Reddito medio comunale dichiarato, senza correzione. Stessa base geografica della vista Comuni</td></tr>
     </table>
@@ -576,6 +577,9 @@
     <h3>Vista Bivariata, come si legge</h3>
     <p>Reddito medio e costo della vita stimato (OMI) sono divisi ciascuno in tre terzili (basso/medio/alto su tutti i 7.890 comuni) e incrociati in una griglia 3×3: 9 colori invece dei 5 dell'indice unico. Utile per distinguere comuni dove le due variabili si compensano (reddito alto e costo alto, o reddito basso e costo basso, entrambi vicini alla media nel potere d'acquisto) da quelli dove non si compensano (reddito basso ma costo alto, o viceversa, i casi più interessanti, invisibili nell'indice unico).</p>
 
+    <h3>Vista Bivariata reddito, come si legge</h3>
+    <p>Stessa griglia 3×3, ma gli assi sono diversi: non reddito × costo vita, bensì <b>reddito nominale</b> (il dato dichiarato al MEF, senza correzioni) × <b>potere d'acquisto reale</b> (già corretto per il costo della vita, la stessa metrica della vista Comuni). Risponde a una domanda diversa dalla Bivariata: non "dove si compensano reddito e costo vita", ma "dove il reddito dichiarato racconta una storia diversa dal potere d'acquisto effettivo". La cella più interessante è reddito nominale alto ma potere d'acquisto basso: un comune che sembra ricco guardando solo i redditi, ma dove il costo della vita elevato erode gran parte del vantaggio.</p>
+
     <h3>Vista Comuni, come si stima il costo della vita</h3>
     <p>Si usa il valore OMI medio (€/m², Agenzia delle Entrate, abitazioni civili stato normale) del comune, rapportato alla media nazionale OMI. Dove OMI manca o è nullo (es. mercato immobiliare fermo in aree post-sisma) si usa la media provinciale, poi quella nazionale.</p>
 
@@ -589,7 +593,9 @@
       <tr><td>Istat</td><td>NIC prezzi al consumo, luglio 2026 (base 2025=100)</td><td>77 province + dato nazionale</td></tr>
       <tr><td>Agenzia delle Entrate – OMI</td><td>Valore immobiliare medio, 2° sem. 2025</td><td>7.511 comuni</td></tr>
       <tr><td>Istat</td><td>Confini comunali e provinciali</td><td>7.904 comuni, 107 province (1/1/2022)</td></tr>
+      <tr><td>Istat</td><td>Popolazione residente comunale (censimento 2021)</td><td>7.889 comuni</td></tr>
     </table>
+    <p>La popolazione, mostrata nei popup, è quella del censimento permanente 2021 (non aggiornata agli anni successivi): serve solo come riferimento di contesto, ad esempio per riconoscere i comuni "dormitorio" con pochi contribuenti ma popolazione consistente, o viceversa.</p>
     <p>La fonte usata per ogni area è indicata nel popup al click.</p>
 
     <h3>Altri limiti da tenere presente</h3>
@@ -624,6 +630,6 @@
   </div>
 </div>
 
-<script src="js/main.js?v=19"></script>
+<script src="js/main.js?v=20"></script>
 </body>
 </html>
