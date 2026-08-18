@@ -182,15 +182,16 @@ function addViewLayers(view) {
     paint: {
       'fill-color': fillColor,
       'fill-opacity': active ? 0.82 : 0,
-      'fill-opacity-transition': { duration: 260 }
+      'fill-opacity-transition': { duration: 260 },
+      'fill-antialias': false
     }
   });
   map.addLayer({
     id: lineId, type: 'line', source: srcId, 'source-layer': cfg.sourceLayer,
     paint: {
-      'line-color': 'rgba(11,13,18,0.55)',
-      'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.1, 9, 0.6],
-      'line-opacity': active ? 1 : 0,
+      'line-color': fillColor,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.6, 9, 1.2],
+      'line-opacity': 0,
       'line-opacity-transition': { duration: 260 }
     }
   });
@@ -239,7 +240,7 @@ function switchView(view) {
   for (const v of Object.keys(VIEWS)) {
     const isActive = v === view;
     map.setPaintProperty(`${v}-fill`, 'fill-opacity', isActive ? 0.82 : 0);
-    map.setPaintProperty(`${v}-line`, 'line-opacity', isActive ? 1 : 0);
+    map.setPaintProperty(`${v}-line`, 'line-opacity', 0);
     map.setPaintProperty(`${v}-hover-line`, 'line-opacity', isActive ? 1 : 0);
     if (!isActive) map.setFilter(`${v}-hover-line`, ['==', ['get', VIEWS[v].idField], '']);
   }
