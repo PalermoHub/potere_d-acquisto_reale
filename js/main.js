@@ -152,6 +152,16 @@ const FONTE_LABEL_COMUNI = {
   media_nazionale: 'Media OMI nazionale (fallback)'
 };
 
+/* Contribuenti/popolazione: rapporto tipico ~45-50% a livello nazionale
+   (minori e molti pensionati a basso reddito non dichiarano). Popolazione e'
+   censimento 2021, contribuenti 2024: uno scarto marcato puo' riflettere
+   variazione demografica nel frattempo, non solo composizione anagrafica. */
+function popRatioRow(props) {
+  if (props.popolazione == null || !props.n_contribuenti) return '';
+  const pct = (props.n_contribuenti / props.popolazione * 100).toFixed(0);
+  return `<div class="pop-row"><span class="k">Contribuenti / popolazione</span><span class="v">${pct}%</span></div>`;
+}
+
 function popupComuni(props) {
   const fonteWarn = props.fonte_costo_vita !== 'omi_diretto'
     ? `<div class="pop-warn">⚠ Nessuna quotazione OMI diretta per questo comune: usata la ${props.fonte_costo_vita === 'media_provincia' ? 'media provinciale' : 'media nazionale'}.</div>`
@@ -165,6 +175,7 @@ function popupComuni(props) {
     <div class="pop-row"><span class="k">Fonte costo vita</span><span class="v">${FONTE_LABEL_COMUNI[props.fonte_costo_vita] || props.fonte_costo_vita}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
     <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    ${popRatioRow(props)}
     ${fonteWarn}
   `;
 }
@@ -195,6 +206,7 @@ function popupBivariata(props) {
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
     <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    ${popRatioRow(props)}
   `;
 }
 
@@ -210,6 +222,7 @@ function popupBivariataReddito(props) {
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)} <i>(${TERZILE_LABEL[props.terzile_pot_acquisto]})</i></span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
     <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    ${popRatioRow(props)}
   `;
 }
 
@@ -244,6 +257,7 @@ function popupRedditiComuni(props) {
     <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)}</span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
     <div class="pop-row"><span class="k">Popolazione (2021)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    ${popRatioRow(props)}
   `;
 }
 
