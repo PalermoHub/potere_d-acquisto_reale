@@ -17,6 +17,13 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 :root[data-theme="light"] #theme-toggle .icon-moon{display:none}
 :root[data-theme="light"] #theme-toggle .icon-sun{display:block}
 #map{position:absolute;inset:0}
+#map-tooltip{
+  position:absolute;z-index:6;display:none;pointer-events:none;
+  background:var(--panel);color:var(--text);border:1px solid var(--panel-border);
+  border-radius:5px;padding:4px 9px;font-size:12px;font-weight:600;
+  box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap;
+  transform:translate(14px,-50%);
+}
 
 
 /* Menu speed-dial flottante (icone rotonde, stile mobile) — resta sopra la mappa,

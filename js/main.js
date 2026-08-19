@@ -18,17 +18,20 @@ const VIEWS = {
   comuni: {
     pmtiles: 'dist/geo/potere_acquisto_comuni.pmtiles',
     sourceLayer: 'comuni_potere_acquisto',
-    idField: 'pro_com'
+    idField: 'pro_com',
+    nameField: 'comune'
   },
   province: {
     pmtiles: 'dist/geo/potere_acquisto_province.pmtiles',
     sourceLayer: 'province_potere_acquisto',
-    idField: 'sigla_prov'
+    idField: 'sigla_prov',
+    nameField: 'provincia'
   },
   bivariata: {
     pmtiles: 'dist/geo/potere_acquisto_bivariata.pmtiles',
     sourceLayer: 'comuni_bivariata',
     idField: 'pro_com',
+    nameField: 'comune',
     bivariate: true,
     bivarField: 'bivar_class'
   },
@@ -36,18 +39,21 @@ const VIEWS = {
     pmtiles: 'dist/geo/potere_acquisto_bivariata_reddito.pmtiles',
     sourceLayer: 'comuni_bivariata_reddito',
     idField: 'pro_com',
+    nameField: 'comune',
     bivariate: true,
     bivarField: 'bivar2_class'
   },
   redditi: {
     pmtiles: 'dist/geo/potere_acquisto_province.pmtiles',
     sourceLayer: 'province_potere_acquisto',
-    idField: 'sigla_prov'
+    idField: 'sigla_prov',
+    nameField: 'provincia'
   },
   redditiComuni: {
     pmtiles: 'dist/geo/potere_acquisto_comuni.pmtiles',
     sourceLayer: 'comuni_potere_acquisto',
     idField: 'pro_com',
+    nameField: 'comune',
     sharedSource: 'comuni' // stessi tile del layer "comuni", solo stile diverso: niente doppio fetch
   }
 };
@@ -290,6 +296,17 @@ function clearHover() {
   hoveredId = null;
 }
 
+const nameTooltipEl = document.getElementById('map-tooltip');
+function showNameTooltip(name, point) {
+  nameTooltipEl.textContent = name;
+  nameTooltipEl.style.left = `${point.x}px`;
+  nameTooltipEl.style.top = `${point.y}px`;
+  nameTooltipEl.style.display = 'block';
+}
+function hideNameTooltip() {
+  nameTooltipEl.style.display = 'none';
+}
+
 function addViewLayers(view) {
   const cfg = VIEWS[view];
   const srcId = cfg.sharedSource ? `src-${cfg.sharedSource}` : `src-${view}`;
@@ -344,6 +361,7 @@ function addViewLayers(view) {
   map.on('mousemove', fillId, (e) => {
     if (view !== currentView || !e.features.length) return;
     map.getCanvas().style.cursor = 'pointer';
+    showNameTooltip(e.features[0].properties[cfg.nameField], e.point);
     const id = e.features[0].id;
     if (hoveredId && hoveredId.id === id && hoveredId.source === srcId) return;
     clearHover();
@@ -354,6 +372,7 @@ function addViewLayers(view) {
     if (view !== currentView) return;
     map.getCanvas().style.cursor = '';
     clearHover();
+    hideNameTooltip();
   });
   map.on('click', fillId, (e) => {
     if (view !== currentView) return;
@@ -415,6 +434,7 @@ map.on('load', () => {
 function switchView(view) {
   if (view === currentView) return;
   clearHover();
+  hideNameTooltip();
   currentView = view;
   for (const v of Object.keys(VIEWS)) {
     const isActive = v === view;
