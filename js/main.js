@@ -14,6 +14,12 @@ const CARTO_TILES = {
 const MAP_BG = { dark: '#0b0d12', light: '#e8e4d8' };
 const BORDER_COLOR = { dark: 'rgba(255,255,255,.6)', light: 'rgba(30,30,30,.55)' };
 
+// Base satellitare (Esri World Imagery, nessuna API key richiesta), alternativa
+// al basemap colore CARTO — attivabile dal dial, indipendente dal tema chiaro/scuro.
+const SATELLITE_TILES = ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'];
+const SATELLITE_KEY = 'poteredacquisto-satellite';
+let satelliteOn = localStorage.getItem(SATELLITE_KEY) === '1';
+
 const VIEWS = {
   comuni: {
     pmtiles: 'dist/geo/potere_acquisto_comuni.pmtiles',
@@ -71,11 +77,19 @@ const map = new maplibregl.Map({
         tileSize: 256,
         maxzoom: 20,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      },
+      'satellite-base': {
+        type: 'raster',
+        tiles: SATELLITE_TILES,
+        tileSize: 256,
+        maxzoom: 19,
+        attribution: '&copy; Esri, Maxar, Earthstar Geographics'
       }
     },
     layers: [
       { id: 'bg', type: 'background', paint: { 'background-color': MAP_BG[currentTheme] } },
-      { id: 'carto-base-layer', type: 'raster', source: 'carto-base' }
+      { id: 'carto-base-layer', type: 'raster', source: 'carto-base', layout: { visibility: satelliteOn ? 'none' : 'visible' } },
+      { id: 'satellite-base-layer', type: 'raster', source: 'satellite-base', layout: { visibility: satelliteOn ? 'visible' : 'none' } }
     ]
   },
   center: [12.5, 42.5],
@@ -869,6 +883,16 @@ function setTheme(theme) {
   }
 }
 
+const satelliteDialBtn = document.getElementById('satellite-dial-btn');
+satelliteDialBtn.classList.toggle('active', satelliteOn);
+function toggleSatellite() {
+  satelliteOn = !satelliteOn;
+  localStorage.setItem(SATELLITE_KEY, satelliteOn ? '1' : '0');
+  if (map.getLayer('carto-base-layer')) map.setLayoutProperty('carto-base-layer', 'visibility', satelliteOn ? 'none' : 'visible');
+  if (map.getLayer('satellite-base-layer')) map.setLayoutProperty('satellite-base-layer', 'visibility', satelliteOn ? 'visible' : 'none');
+  satelliteDialBtn.classList.toggle('active', satelliteOn);
+}
+
 const dialFab = document.getElementById('dial-fab');
 const dialItems = document.getElementById('dial-items');
 function closeDial() { dialFab.classList.remove('open'); dialItems.classList.remove('open'); dialFab.setAttribute('aria-expanded', 'false'); }
@@ -892,6 +916,8 @@ dialItems.querySelectorAll('.dial-item').forEach(btn => {
       setTheme(currentTheme === 'dark' ? 'light' : 'dark');
     } else if (btn.dataset.action === 'fullscreen') {
       toggleFullscreen();
+    } else if (btn.dataset.action === 'satellite') {
+      toggleSatellite();
     } else if (btn.dataset.action === 'opacity') {
       opacityPanel.classList.contains('open') ? closeOpacityPanel() : openOpacityPanel();
     } else if (btn.dataset.view) {
