@@ -393,7 +393,7 @@ function addViewLayers(view) {
     hideNameTooltip();
   });
   map.on('click', fillId, (e) => {
-    if (view !== currentView) return;
+    if (view !== currentView || drawScope) return;
     const props = e.features[0].properties;
     const html = view === 'bivariataReddito' ? popupBivariataReddito(props)
       : cfg.bivariate ? popupBivariata(props)
@@ -446,7 +446,19 @@ map.on('load', () => {
   addViewLayers('redditiComuni');
   addBorderLayers();
   applyBorders();
+  addDrawLayers();
+  syncDrawOverlayForView(currentView);
   document.getElementById('map-loader').style.display = 'none';
+});
+
+/* Aggiunge un punto al poligono in disegno quando si è in modalità "disegna
+   un'area"; il guard nel click handler di ogni fillId sopra evita che lo
+   stesso click apra anche il popup del comune/provincia sotto il cursore. */
+map.on('click', (e) => {
+  if (!drawScope) return;
+  drawPoints.push([e.lngLat.lng, e.lngLat.lat]);
+  updateDrawSource();
+  drawHintDone.disabled = drawPoints.length < 3;
 });
 
 function switchView(view) {
@@ -464,6 +476,7 @@ function switchView(view) {
     btn.classList.toggle('active', btn.dataset.view === view);
   });
   setActiveTab(view);
+  syncDrawOverlayForView(view);
 }
 
 /* ── Pulsante bordi sotto lo zoom: mostra/nasconde tutti e tre i livelli di
@@ -568,12 +581,12 @@ const RANKING_UNIT_LABEL = { comuni: 'comuni', province: 'province', regioni: 'r
 const RANKING_METRIC_LABEL = { redditi: 'reddito medio', redditiComuni: 'reddito medio' };
 let RANKINGS = null;
 const RANKING_STATE = {
-  comuni:        { unit: 'comuni',        viewport: false },
-  province:      { unit: 'province',      viewport: false },
-  bivariata:        { unit: 'comuni', viewport: false },
-  bivariataReddito: { unit: 'comuni', viewport: false },
-  redditi:       { unit: 'redditi',       viewport: false },
-  redditiComuni: { unit: 'redditi_comuni', viewport: false }
+  comuni:        { unit: 'comuni',        viewport: false, polygonRing: null },
+  province:      { unit: 'province',      viewport: false, polygonRing: null },
+  bivariata:        { unit: 'comuni', viewport: false, polygonRing: null },
+  bivariataReddito: { unit: 'comuni', viewport: false, polygonRing: null },
+  redditi:       { unit: 'redditi',       viewport: false, polygonRing: null },
+  redditiComuni: { unit: 'redditi_comuni', viewport: false, polygonRing: null }
 };
 
 function fmtRankVal(r) {
@@ -582,7 +595,7 @@ function fmtRankVal(r) {
 
 /* Le classifiche seguono il filtro geografico attivo (stesso geoState della
    mappa): provincia selezionata ha precedenza su regione, come nel filtro mappa. */
-function filterRankingRows(rows, unit, viewport) {
+function filterRankingRows(rows, unit, viewport, polygonRing) {
   const isRegioni = unit === 'regioni' || unit === 'redditi_regioni';
   let out = rows;
   if (geoState.provincia) {
@@ -590,7 +603,8 @@ function filterRankingRows(rows, unit, viewport) {
   } else if (geoState.regione) {
     out = isRegioni ? out.filter(r => r.nome === geoState.regione) : out.filter(r => r.regione === geoState.regione);
   }
-  if (viewport) out = filterByViewport(out, unit);
+  if (polygonRing) out = filterByPolygon(out, unit, polygonRing);
+  else if (viewport) out = filterByViewport(out, unit);
   return out;
 }
 
@@ -618,29 +632,105 @@ function viewportIdSet(layerId, idField) {
   return s;
 }
 
+/* layerId/idField = dove e quale proprietà leggere sui tile; rowKey = campo
+   corrispondente sulle righe di rankings.json, usato per l'incrocio. */
+function unitLayerField(unit) {
+  if (unit === 'province') return ['province-fill', 'sigla_prov', 'prov'];
+  if (unit === 'redditi') return ['redditi-fill', 'sigla_prov', 'prov'];
+  if (unit === 'redditi_regioni') return ['redditi-fill', 'regione', 'nome'];
+  if (unit === 'redditi_comuni') return ['redditiComuni-fill', 'pro_com', 'pro_com'];
+  if (unit === 'regioni') return ['comuni-fill', 'regione', 'nome'];
+  return ['comuni-fill', 'pro_com', 'pro_com'];
+}
+
 function filterByViewport(rows, unit) {
-  if (unit === 'province') {
-    const ids = viewportIdSet('province-fill', 'sigla_prov');
-    return ids ? rows.filter(r => ids.has(r.prov)) : rows;
+  const [layerId, idField, rowKey] = unitLayerField(unit);
+  const ids = viewportIdSet(layerId, idField);
+  return ids ? rows.filter(r => ids.has(r[rowKey])) : rows;
+}
+
+/* Poligono disegnato a mano: stesso incrocio per id, ma il set arriva dal
+   confronto punto-in-poligono sul centroide di ogni feature renderizzata
+   (vedi polygonIdSet), invece che dalla semplice query sul canvas visibile. */
+function filterByPolygon(rows, unit, ring) {
+  const [layerId, idField, rowKey] = unitLayerField(unit);
+  const ids = polygonIdSet(layerId, idField, ring);
+  return ids ? rows.filter(r => ids.has(r[rowKey])) : rows;
+}
+
+function featureCentroid(geom) {
+  let ring;
+  if (geom.type === 'Polygon') ring = geom.coordinates[0];
+  else if (geom.type === 'MultiPolygon') {
+    ring = geom.coordinates.reduce((best, poly) => (poly[0].length > best.length ? poly[0] : best), geom.coordinates[0][0]);
+  } else return null;
+  let x = 0, y = 0;
+  for (const [lng, lat] of ring) { x += lng; y += lat; }
+  return [x / ring.length, y / ring.length];
+}
+
+function pointInPolygon([x, y], ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    const intersect = (yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
   }
-  if (unit === 'redditi') {
-    const ids = viewportIdSet('redditi-fill', 'sigla_prov');
-    return ids ? rows.filter(r => ids.has(r.prov)) : rows;
+  return inside;
+}
+
+function polygonIdSet(layerId, idField, ring) {
+  if (!map.getLayer(layerId)) return null;
+  const feats = map.queryRenderedFeatures({ layers: [layerId] });
+  const s = new Set();
+  feats.forEach(f => {
+    const c = featureCentroid(f.geometry);
+    if (c && pointInPolygon(c, ring)) s.add(f.properties[idField]);
+  });
+  return s;
+}
+
+/* Quando un filtro geografico "ad area" (viewport o poligono disegnato) è
+   attivo, la classifica può contenere comuni/province di regioni o province
+   diverse: mescolarli in un'unica top/bottom 10 confonde più che informare,
+   quindi si raggruppa per l'unità geografica più ampia che varia — regione
+   se l'area tocca più regioni, altrimenti provincia (solo per l'unità
+   "comuni", perché a livello "province" la provincia È già la riga). */
+function rankingGroupField(rows, unit) {
+  if (unit === 'regioni' || unit === 'redditi_regioni') return null;
+  if (new Set(rows.map(r => r.regione).filter(Boolean)).size > 1) return 'regione';
+  if (unit === 'comuni' || unit === 'redditi_comuni') {
+    if (new Set(rows.map(r => r.prov).filter(Boolean)).size > 1) return 'prov';
   }
-  if (unit === 'redditi_regioni') {
-    const ids = viewportIdSet('redditi-fill', 'regione');
-    return ids ? rows.filter(r => ids.has(r.nome)) : rows;
-  }
-  if (unit === 'redditi_comuni') {
-    const ids = viewportIdSet('redditiComuni-fill', 'pro_com');
-    return ids ? rows.filter(r => ids.has(r.pro_com)) : rows;
-  }
-  if (unit === 'regioni') {
-    const ids = viewportIdSet('comuni-fill', 'regione');
-    return ids ? rows.filter(r => ids.has(r.nome)) : rows;
-  }
-  const ids = viewportIdSet('comuni-fill', 'pro_com');
-  return ids ? rows.filter(r => ids.has(r.pro_com)) : rows;
+  return null;
+}
+
+function renderGroupedRanking(container, rows, unit, scope, groupField, direction) {
+  const groups = {};
+  rows.forEach(r => { const k = r[groupField]; if (!k) return; (groups[k] = groups[k] || []).push(r); });
+  const entries = Object.entries(groups).map(([key, list]) => {
+    list.sort((a, b) => b.valore - a.valore);
+    return { key, list };
+  }).sort((a, b) => b.list[0].valore - a.list[0].valore);
+
+  container.innerHTML = '';
+  entries.forEach(({ key, list }) => {
+    const sub = direction === 'top' ? list.slice(0, 10) : list.slice(-10).reverse();
+    const vals = list.map(r => r.valore);
+    const minV = Math.min(...vals), maxV = Math.max(...vals);
+    const label = groupField === 'regione' ? REGIONE_LABEL(key) : key;
+    const details = document.createElement('details');
+    details.className = 'ranking-group';
+    details.open = true;
+    const summary = document.createElement('summary');
+    summary.innerHTML = `${esc(label)} <span class="ranking-group-count">${list.length}</span>`;
+    const ol = document.createElement('ol');
+    ol.className = 'ranking-list';
+    details.appendChild(summary);
+    details.appendChild(ol);
+    container.appendChild(details);
+    renderRankingList(ol, sub, minV, maxV, unit, scope);
+  });
 }
 
 function topBottom(rows, n = 10) {
@@ -648,11 +738,12 @@ function topBottom(rows, n = 10) {
   return { top: sorted.slice(0, n), bottom: sorted.slice(-n).reverse() };
 }
 
-function rankingScopeLabel(viewport) {
+function rankingScopeLabel(viewport, polygon) {
   let s = '';
   if (geoState.provincia) s = ` in provincia di ${provinceOf(geoState.regione)[geoState.provincia]?.nome || geoState.provincia}`;
   else if (geoState.regione) s = ` in ${REGIONE_LABEL(geoState.regione)}`;
-  if (viewport) s += s ? ', nell’area visualizzata' : ' nell’area visualizzata sulla mappa';
+  if (polygon) s += s ? ', nell’area disegnata sulla mappa' : ' nell’area disegnata sulla mappa';
+  else if (viewport) s += s ? ', nell’area visualizzata' : ' nell’area visualizzata sulla mappa';
   return s;
 }
 
@@ -729,7 +820,7 @@ function renderBivarAccordion(scope) {
   const st = RANKING_STATE[scope];
   const container = document.getElementById(cfg.containerId);
   if (!container) return;
-  const rows = filterRankingRows(RANKINGS.comuni, 'comuni', st.viewport);
+  const rows = filterRankingRows(RANKINGS.comuni, 'comuni', st.viewport, st.polygonRing);
   const byClass = {};
   rows.forEach(r => { const cls = r[cfg.classField]; if (!cls) return; (byClass[cls] = byClass[cls] || []).push(r); });
   Object.values(byClass).forEach(list => list.sort((a, b) => b.valore - a.valore));
@@ -771,21 +862,30 @@ function renderRankingScope(scope) {
   const bottomEl = document.querySelector(`.ranking-list.ranking-bottom[data-scope="${scope}"]`);
   const noteEl = document.querySelector(`.ranking-note[data-scope="${scope}"]`);
 
-  const rows = filterRankingRows(RANKINGS[unit], unit, st.viewport);
+  const rows = filterRankingRows(RANKINGS[unit], unit, st.viewport, st.polygonRing);
   if (rows.length === 0) {
     topEl.innerHTML = ''; bottomEl.innerHTML = '';
-    subtitleEl.textContent = `Nessun dato disponibile${rankingScopeLabel(st.viewport)} per questa classifica.`;
+    subtitleEl.textContent = `Nessun dato disponibile${rankingScopeLabel(st.viewport, !!st.polygonRing)} per questa classifica.`;
     noteEl.textContent = '';
     return;
   }
-  const data = topBottom(rows);
-  const allVals = rows.map(r => r.valore);
-  const minVal = Math.min(...allVals), maxVal = Math.max(...allVals);
-  renderRankingList(topEl, data.top, minVal, maxVal, unit, scope);
-  renderRankingList(bottomEl, data.bottom, minVal, maxVal, unit, scope);
-  const n = Math.min(10, rows.length);
+  const groupField = (st.viewport || st.polygonRing) ? rankingGroupField(rows, unit) : null;
   const metric = RANKING_METRIC_LABEL[scope] || "potere d'acquisto reale";
-  subtitleEl.textContent = `I ${n} ${RANKING_UNIT_LABEL[unit]} dove si vive meglio e peggio${rankingScopeLabel(st.viewport)}, per ${metric}`;
+  if (groupField) {
+    renderGroupedRanking(topEl, rows, unit, scope, groupField, 'top');
+    renderGroupedRanking(bottomEl, rows, unit, scope, groupField, 'bottom');
+    const groupWord = groupField === 'regione' ? 'regioni' : 'province';
+    const groupCount = new Set(rows.map(r => r[groupField])).size;
+    subtitleEl.textContent = `Migliori e peggiori ${RANKING_UNIT_LABEL[unit]} per ${metric}${rankingScopeLabel(st.viewport, !!st.polygonRing)}, raggruppati per ${groupWord} (${groupCount})`;
+  } else {
+    const data = topBottom(rows);
+    const allVals = rows.map(r => r.valore);
+    const minVal = Math.min(...allVals), maxVal = Math.max(...allVals);
+    renderRankingList(topEl, data.top, minVal, maxVal, unit, scope);
+    renderRankingList(bottomEl, data.bottom, minVal, maxVal, unit, scope);
+    const n = Math.min(10, rows.length);
+    subtitleEl.textContent = `I ${n} ${RANKING_UNIT_LABEL[unit]} dove si vive meglio e peggio${rankingScopeLabel(st.viewport, !!st.polygonRing)}, per ${metric}`;
+  }
   noteEl.textContent = unit === 'comuni'
     ? `Solo comuni con almeno ${RANKINGS.min_contribuenti.toLocaleString('it-IT')} contribuenti, per evitare medie statisticamente rumorose sui centri molto piccoli.`
     : unit === 'redditi_comuni'
@@ -804,6 +904,32 @@ function renderRankingScope(scope) {
    "MI" trovano tutti Milano. */
 const normSearch = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 let capoluoghiSearchTerm = '';
+let capoluoghiGroupByRegione = false;
+
+/* Elenco completo raggruppato per regione: ogni sotto-lista resta ordinata
+   per valore (l'array di partenza è già ordinato, il filtro preserva
+   l'ordine) e ogni riga mostra comunque il suo rank reale sui 107 capoluoghi
+   (renderRankingList lo legge da r.rank, non dalla posizione nel gruppo). */
+function renderRegionGroups(container, rows, unit, scope) {
+  const groups = {};
+  rows.forEach(r => { (groups[r.regione] = groups[r.regione] || []).push(r); });
+  const entries = Object.entries(groups).sort((a, b) => b[1][0].valore - a[1][0].valore);
+  container.innerHTML = '';
+  entries.forEach(([regione, list]) => {
+    const vals = list.map(r => r.valore);
+    const minV = Math.min(...vals), maxV = Math.max(...vals);
+    const details = document.createElement('details');
+    details.className = 'ranking-group';
+    details.open = true;
+    const summary = document.createElement('summary');
+    summary.innerHTML = `${esc(REGIONE_LABEL(regione))} <span class="ranking-group-count">${list.length}</span>`;
+    const ol = document.createElement('ol');
+    ol.className = 'ranking-list';
+    details.append(summary, ol);
+    container.appendChild(details);
+    renderRankingList(ol, list, minV, maxV, unit, scope);
+  });
+}
 
 function renderCapoluoghi() {
   if (!RANKINGS || !RANKINGS.capoluoghi) return;
@@ -819,18 +945,31 @@ function renderCapoluoghi() {
   let rows = RANKINGS.capoluoghi;
   const term = normSearch(capoluoghiSearchTerm);
   if (term) {
-    rows = rows.filter(r => normSearch(r.nome).includes(term) || normSearch(r.prov).includes(term));
+    rows = rows.filter(r => normSearch(r.nome).includes(term) || normSearch(r.prov).includes(term) || normSearch(r.regione).includes(term));
   }
   if (countEl) countEl.textContent = term ? `${rows.length}/${RANKINGS.capoluoghi.length}` : '';
   if (rows.length === 0) { el.innerHTML = '<li class="ranking-empty">Nessun capoluogo trovato.</li>'; return; }
-  const allVals = rows.map(r => r.valore);
-  renderRankingList(el, rows, Math.min(...allVals), Math.max(...allVals), 'comuni', 'comuni');
+  if (capoluoghiGroupByRegione) {
+    renderRegionGroups(el, rows, 'comuni', 'comuni');
+  } else {
+    const allVals = rows.map(r => r.valore);
+    renderRankingList(el, rows, Math.min(...allVals), Math.max(...allVals), 'comuni', 'comuni');
+  }
 }
 
 const capoluoghiSearchInput = document.getElementById('capoluoghi-search');
 if (capoluoghiSearchInput) {
   capoluoghiSearchInput.addEventListener('input', () => {
     capoluoghiSearchTerm = capoluoghiSearchInput.value;
+    renderCapoluoghi();
+  });
+}
+
+const capoluoghiGroupToggle = document.getElementById('capoluoghi-group-toggle');
+if (capoluoghiGroupToggle) {
+  capoluoghiGroupToggle.addEventListener('click', () => {
+    capoluoghiGroupByRegione = !capoluoghiGroupByRegione;
+    capoluoghiGroupToggle.setAttribute('aria-pressed', String(capoluoghiGroupByRegione));
     renderCapoluoghi();
   });
 }
@@ -856,6 +995,11 @@ document.querySelectorAll('.ranking-viewport-toggle').forEach(btn => {
   btn.addEventListener('click', () => {
     RANKING_STATE[scope].viewport = !RANKING_STATE[scope].viewport;
     btn.setAttribute('aria-pressed', String(RANKING_STATE[scope].viewport));
+    if (RANKING_STATE[scope].viewport && RANKING_STATE[scope].polygonRing) {
+      RANKING_STATE[scope].polygonRing = null;
+      updateDrawButtonUI(scope);
+      syncDrawOverlayForView(scope);
+    }
     renderRankingScope(scope);
   });
 });
@@ -867,6 +1011,133 @@ map.on('move', () => {
   if (viewportRankingRAF) return;
   viewportRankingRAF = requestAnimationFrame(() => { viewportRankingRAF = null; renderRankingScope(scope); });
 });
+
+/* ── "Disegna un'area": poligono manuale disegnato punto per punto sulla
+   mappa (clic = vertice, "Fine" = chiude e applica il filtro alla classifica
+   dello scope attivo). Alternativa a "Solo l'area inquadrata" quando serve
+   un confine preciso invece del rettangolo del viewport — i due filtri sono
+   mutuamente esclusivi per scope. ── */
+let drawScope = null;
+let drawPoints = [];
+let displayedPolygonScope = null;
+
+function addDrawLayers() {
+  map.addSource('draw-area-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({ id: 'draw-area-fill', type: 'fill', source: 'draw-area-src', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': '#4f8cff', 'fill-opacity': .18 } });
+  map.addLayer({ id: 'draw-area-line', type: 'line', source: 'draw-area-src', filter: ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']], paint: { 'line-color': '#4f8cff', 'line-width': 2 } });
+  map.addLayer({ id: 'draw-area-vertices', type: 'circle', source: 'draw-area-src', filter: ['==', '$type', 'Point'], paint: { 'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': '#4f8cff', 'circle-stroke-width': 2 } });
+}
+
+function updateDrawSource() {
+  const src = map.getSource('draw-area-src');
+  if (!src) return;
+  const features = drawPoints.map(p => ({ type: 'Feature', geometry: { type: 'Point', coordinates: p }, properties: {} }));
+  if (drawPoints.length === 2) {
+    features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: drawPoints }, properties: {} });
+  } else if (drawPoints.length >= 3) {
+    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[...drawPoints, drawPoints[0]]] }, properties: {} });
+  }
+  src.setData({ type: 'FeatureCollection', features });
+}
+
+/* Richiamata a ogni cambio tab: mostra sulla mappa il poligono salvato per
+   quello scope (se c'è) o svuota l'overlay — non tocca nulla se si sta
+   disegnando, per non interrompere il disegno in corso. */
+function syncDrawOverlayForView(view) {
+  if (drawScope) return;
+  const src = map.getSource('draw-area-src');
+  if (!src) return;
+  const ring = RANKING_STATE[view] && RANKING_STATE[view].polygonRing;
+  if (ring) {
+    src.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: {} }] });
+    displayedPolygonScope = view;
+  } else {
+    src.setData({ type: 'FeatureCollection', features: [] });
+    displayedPolygonScope = null;
+  }
+}
+
+function updateDrawButtonUI(scope) {
+  const btn = document.querySelector(`.ranking-draw-toggle[data-scope="${scope}"]`);
+  if (!btn) return;
+  const active = !!RANKING_STATE[scope].polygonRing;
+  btn.classList.remove('drawing');
+  btn.setAttribute('aria-pressed', String(active));
+  btn.textContent = active ? '✕ Rimuovi area disegnata' : '✏️ Disegna un\'area';
+}
+
+const drawHint = document.getElementById('draw-hint');
+const drawHintDone = document.getElementById('draw-hint-done');
+const drawHintCancel = document.getElementById('draw-hint-cancel');
+
+function startDrawing(scope) {
+  if (drawScope && drawScope !== scope) cancelDrawing();
+  RANKING_STATE[scope].polygonRing = null;
+  updateDrawButtonUI(scope);
+  drawScope = scope;
+  drawPoints = [];
+  displayedPolygonScope = scope;
+  updateDrawSource();
+  map.doubleClickZoom.disable();
+  map.getCanvas().style.cursor = 'crosshair';
+  drawHint.classList.add('open');
+  drawHintDone.disabled = true;
+  const btn = document.querySelector(`.ranking-draw-toggle[data-scope="${scope}"]`);
+  if (btn) btn.classList.add('drawing');
+  renderRankingScope(scope);
+}
+
+function exitDrawUI() {
+  drawScope = null;
+  drawPoints = [];
+  map.doubleClickZoom.enable();
+  map.getCanvas().style.cursor = '';
+  drawHint.classList.remove('open');
+  document.querySelectorAll('.ranking-draw-toggle.drawing').forEach(b => b.classList.remove('drawing'));
+}
+
+function cancelDrawing() {
+  const scope = drawScope;
+  exitDrawUI();
+  if (scope) syncDrawOverlayForView(scope);
+}
+
+function finishDrawing() {
+  if (!drawScope || drawPoints.length < 3) return;
+  const scope = drawScope;
+  RANKING_STATE[scope].polygonRing = [...drawPoints, drawPoints[0]];
+  RANKING_STATE[scope].viewport = false;
+  const vpBtn = document.querySelector(`.ranking-viewport-toggle[data-scope="${scope}"]`);
+  if (vpBtn) vpBtn.setAttribute('aria-pressed', 'false');
+  exitDrawUI();
+  updateDrawButtonUI(scope);
+  renderRankingScope(scope);
+}
+
+function clearPolygon(scope) {
+  RANKING_STATE[scope].polygonRing = null;
+  updateDrawButtonUI(scope);
+  syncDrawOverlayForView(scope);
+  renderRankingScope(scope);
+}
+
+document.querySelectorAll('.ranking-draw-toggle').forEach(btn => {
+  const scope = btn.dataset.scope;
+  btn.addEventListener('click', () => {
+    if (drawScope === scope) { cancelDrawing(); return; }
+    if (RANKING_STATE[scope].polygonRing) { clearPolygon(scope); return; }
+    if (RANKING_STATE[scope].viewport) {
+      RANKING_STATE[scope].viewport = false;
+      const vpBtn = document.querySelector(`.ranking-viewport-toggle[data-scope="${scope}"]`);
+      if (vpBtn) vpBtn.setAttribute('aria-pressed', 'false');
+    }
+    startDrawing(scope);
+  });
+});
+
+drawHintDone.addEventListener('click', finishDrawing);
+drawHintCancel.addEventListener('click', cancelDrawing);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawScope) cancelDrawing(); });
 
 fetch('dist/geo/rankings.json?v=15').then(r => r.json()).then(d => { RANKINGS = d; renderAllRankings(); });
 

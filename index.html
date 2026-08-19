@@ -14,7 +14,7 @@
         integrity="sha384-QfbOCebHNw8pQiPAOd2IFee2v2A5VYZxBk0+JGZ5H+3mfzVIp6zsQNkTsfGJot93" crossorigin="anonymous"></script>
 	<meta name="author" content="Giovan Battista Vitrano per OpenDataSicilia.it">	
 	<meta name="creation_Date" content="18/08/2026">	
-	<link rel="stylesheet" href="css/style.css?v=16"/>
+	<link rel="stylesheet" href="css/style.css?v=17"/>
 	<link rel="shortcut icon" href="img/favicon.ico"/> 
 	<link rel="icon" href="img/favicon.png" type="image/png"/> 
 
@@ -152,7 +152,10 @@
             <button class="ranking-subtab" data-unit="regioni">Regioni</button>
           </div>
         </div>
-        <button class="ranking-viewport-toggle" data-scope="comuni" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <div class="ranking-scope-btns">
+          <button class="ranking-scope-btn ranking-viewport-toggle" data-scope="comuni" aria-pressed="false" title="Limita la classifica ai comuni/province visibili nell'area di mappa inquadrata">📍 Solo l'area inquadrata</button>
+          <button class="ranking-scope-btn ranking-draw-toggle" data-scope="comuni" aria-pressed="false" title="Disegna a mano un'area sulla mappa per classificare solo ciò che ricade al suo interno">✏️ Disegna un'area</button>
+        </div>
         <p class="ranking-subtitle" data-scope="comuni"></p>
         <div class="ranking-section">
           <div class="ranking-section-title ranking-section-title--best">▲ Potere d'acquisto più alto</div>
@@ -190,7 +193,10 @@
         <div class="ranking-block-header">
           <h3>Classifiche</h3>
         </div>
-        <button class="ranking-viewport-toggle" data-scope="province" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <div class="ranking-scope-btns">
+          <button class="ranking-scope-btn ranking-viewport-toggle" data-scope="province" aria-pressed="false" title="Limita la classifica ai comuni/province visibili nell'area di mappa inquadrata">📍 Solo l'area inquadrata</button>
+          <button class="ranking-scope-btn ranking-draw-toggle" data-scope="province" aria-pressed="false" title="Disegna a mano un'area sulla mappa per classificare solo ciò che ricade al suo interno">✏️ Disegna un'area</button>
+        </div>
         <p class="ranking-subtitle" data-scope="province"></p>
         <div class="ranking-section">
           <div class="ranking-section-title ranking-section-title--best">▲ Potere d'acquisto più alto</div>
@@ -256,7 +262,10 @@
             <button class="ranking-subtab" data-unit="redditi_regioni">Regioni</button>
           </div>
         </div>
-        <button class="ranking-viewport-toggle" data-scope="redditi" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <div class="ranking-scope-btns">
+          <button class="ranking-scope-btn ranking-viewport-toggle" data-scope="redditi" aria-pressed="false" title="Limita la classifica ai comuni/province visibili nell'area di mappa inquadrata">📍 Solo l'area inquadrata</button>
+          <button class="ranking-scope-btn ranking-draw-toggle" data-scope="redditi" aria-pressed="false" title="Disegna a mano un'area sulla mappa per classificare solo ciò che ricade al suo interno">✏️ Disegna un'area</button>
+        </div>
         <p class="ranking-subtitle" data-scope="redditi"></p>
         <div class="ranking-section">
           <div class="ranking-section-title ranking-section-title--best">▲ Reddito più alto</div>
@@ -300,7 +309,10 @@
             <button class="ranking-subtab" data-unit="redditi_regioni">Regioni</button>
           </div>
         </div>
-        <button class="ranking-viewport-toggle" data-scope="redditiComuni" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <div class="ranking-scope-btns">
+          <button class="ranking-scope-btn ranking-viewport-toggle" data-scope="redditiComuni" aria-pressed="false" title="Limita la classifica ai comuni/province visibili nell'area di mappa inquadrata">📍 Solo l'area inquadrata</button>
+          <button class="ranking-scope-btn ranking-draw-toggle" data-scope="redditiComuni" aria-pressed="false" title="Disegna a mano un'area sulla mappa per classificare solo ciò che ricade al suo interno">✏️ Disegna un'area</button>
+        </div>
         <p class="ranking-subtitle" data-scope="redditiComuni"></p>
         <div class="ranking-section">
           <div class="ranking-section-title ranking-section-title--best">▲ Reddito più alto</div>
@@ -364,7 +376,10 @@
         <div class="ranking-block-header">
           <h3>Classifica per classe</h3>
         </div>
-        <button class="ranking-viewport-toggle" data-scope="bivariata" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <div class="ranking-scope-btns">
+          <button class="ranking-scope-btn ranking-viewport-toggle" data-scope="bivariata" aria-pressed="false" title="Limita la classifica ai comuni/province visibili nell'area di mappa inquadrata">📍 Solo l'area inquadrata</button>
+          <button class="ranking-scope-btn ranking-draw-toggle" data-scope="bivariata" aria-pressed="false" title="Disegna a mano un'area sulla mappa per classificare solo ciò che ricade al suo interno">✏️ Disegna un'area</button>
+        </div>
         <p class="ranking-subtitle">Le 9 classi dell'incrocio reddito × costo vita. Clicca su una classe per vedere i comuni con potere d'acquisto più alto in quella classe.</p>
         <div class="bivar-class-accordion" id="bivar-class-accordion"></div>
         <p class="ranking-note">Solo comuni con almeno 1.000 contribuenti, per evitare medie statisticamente rumorose sui centri molto piccoli.</p>
@@ -425,7 +440,10 @@
         <div class="ranking-block-header">
           <h3>Classifica per classe</h3>
         </div>
-        <button class="ranking-viewport-toggle" data-scope="bivariataReddito" aria-pressed="false">📍 Solo quest'area della mappa</button>
+        <div class="ranking-scope-btns">
+          <button class="ranking-scope-btn ranking-viewport-toggle" data-scope="bivariataReddito" aria-pressed="false" title="Limita la classifica ai comuni/province visibili nell'area di mappa inquadrata">📍 Solo l'area inquadrata</button>
+          <button class="ranking-scope-btn ranking-draw-toggle" data-scope="bivariataReddito" aria-pressed="false" title="Disegna a mano un'area sulla mappa per classificare solo ciò che ricade al suo interno">✏️ Disegna un'area</button>
+        </div>
         <p class="ranking-subtitle">Le 9 classi dell'incrocio reddito nominale × potere d'acquisto reale. Clicca su una classe per vedere i comuni con potere d'acquisto più alto in quella classe.</p>
         <div class="bivar-class-accordion" id="bivar-class-accordion-reddito"></div>
         <p class="ranking-note">Solo comuni con almeno 1.000 contribuenti, per evitare medie statisticamente rumorose sui centri molto piccoli.</p>
@@ -441,6 +459,7 @@
         <input type="text" id="capoluoghi-search" placeholder="Cerca capoluogo o provincia…" autocomplete="off">
         <span id="capoluoghi-search-count" class="ranking-search-count"></span>
       </div>
+      <button id="capoluoghi-group-toggle" class="ranking-scope-btn ranking-scope-btn--full" aria-pressed="false" title="Raggruppa l'elenco per regione invece della classifica unica ordinata">🗂️ Raggruppa per regione</button>
       <div class="ranking-block">
         <ol class="ranking-list ranking-general" data-scope="capoluoghi"></ol>
       </div>
@@ -526,12 +545,27 @@
     </figure>
 
     <h3><span class="note-h-ico">📊</span>Le classifiche</h3>
-    <p>Il pulsante <b>Classifiche</b> del menu apre il pannello a destra con le posizioni migliori e peggiori per potere d'acquisto (o costo della vita), sia per comuni sia per regioni. In alto è disponibile una barra di ricerca per trovare subito un comune o una provincia.</p>
-    <p>Attiva <b>📍 Solo quest'area della mappa</b> per limitare la classifica a ciò che è visibile nella mappa in quel momento: sposta o zooma la mappa e la classifica si ricalcola da sola. Clicca su una riga della classifica per aprirla e zoomarla direttamente sulla mappa.</p>
+    <p>Il pulsante <b>Classifiche</b> del menu apre il pannello a destra con le posizioni migliori e peggiori per potere d'acquisto (o costo della vita), sia per comuni sia per regioni. In alto è disponibile una barra di ricerca per trovare subito un comune o una provincia. Clicca su una riga della classifica per aprirla e zoomarla direttamente sulla mappa.</p>
 
     <figure class="note-fig note-fig-narrow">
       <img src="img/guide/02-classifiche.png" alt="Screenshot: pannello classifiche con legenda, ricerca viewport e liste a barre" loading="lazy">
       <figcaption>Legenda, interruttore "solo quest'area" e classifica a barre: la lunghezza della barra è proporzionale al valore.</figcaption>
+    </figure>
+
+    <h3><span class="note-h-ico">📍</span>Classifica per area inquadrata o disegnata</h3>
+    <p>Di norma la classifica copre tutta Italia. Due pulsanti sopra le liste restringono il calcolo a una porzione di mappa:</p>
+    <p><b>📍 Solo l'area inquadrata</b> limita la classifica a ciò che è visibile nel riquadro della mappa in quel momento: sposta o zooma e la classifica si ricalcola da sola, senza bisogno di ridisegnare nulla. Utile per confronti rapidi ("chi vince/perde nel Centro-Nord che vedo ora").</p>
+
+    <figure class="note-fig">
+      <img src="img/guide/08-area-inquadrata.png" alt="Screenshot: classifica limitata all'area di mappa inquadrata, raggruppata per regione" loading="lazy">
+      <figcaption>Con "Solo l'area inquadrata" attivo, la mappa mostra solo il Centro-Nord inquadrato e la classifica si raggruppa automaticamente per regione (19 regioni in questo esempio), con i primi/ultimi comuni evidenziati per ciascuna.</figcaption>
+    </figure>
+
+    <p><b>✏️ Disegna un'area</b> permette invece di tracciare a mano un confine personalizzato: clicca sulla mappa per aggiungere i vertici del poligono, poi conferma con <b>✓ Fine</b> (o annulla con <b>Annulla</b>) nella barra che appare in basso. Il poligono resta visibile in blu sulla mappa finché non lo rimuovi con <b>✕ Rimuovi area disegnata</b>. In entrambi i casi, quando l'area copre più regioni o province, la classifica si organizza in un accordion con i primi/ultimi 5 risultati per ciascun gruppo territoriale, invece di un'unica lista piatta.</p>
+
+    <figure class="note-fig">
+      <img src="img/guide/07-disegna-area.png" alt="Screenshot: poligono disegnato a mano sul Nord Italia con classifica raggruppata per regione (Lombardia, Emilia Romagna)" loading="lazy">
+      <figcaption>Un poligono disegnato a mano sul Nord Italia: la classifica si limita ai comuni al suo interno, raggruppati per regione (qui Lombardia, Emilia Romagna, ...).</figcaption>
     </figure>
 
     <h3><span class="note-h-ico">💶</span>Le viste Redditi</h3>
@@ -653,6 +687,15 @@
     <h3><span class="note-h-ico">💻</span>Sviluppo e tecnologia</h3>
     <p>Web app progettata e sviluppata da <a href="https://www.linkedin.com/in/gbvitrano/" target="_blank" rel="noopener">@gbvitrano</a> in collaborazione con <a href="https://www.anthropic.com/" target="_blank" rel="noopener">Claude AI (Anthropic)</a>, che ha affiancato le scelte architetturali, l'ottimizzazione del codice e lo sviluppo delle funzionalità di visualizzazione geospaziale.</p>
 
+    <h3><span class="note-h-ico">🙏</span>Ringraziamenti</h3>
+    <p>Un ringraziamento per il supporto e i consigli durante lo sviluppo a:</p>
+    <ul class="note-src-list">
+      <li><span class="note-src-ico">🤝</span><div><a href="https://www.linkedin.com/in/andreaborruso/" target="_blank" rel="noopener">Andrea Borruso</a></div></li>
+      <li><span class="note-src-ico">🤝</span><div><a href="https://www.linkedin.com/in/piersoft/" target="_blank" rel="noopener">Pier Francesco Paolicelli</a></div></li>
+      <li><span class="note-src-ico">🤝</span><div><a href="https://www.linkedin.com/in/napolnx/" target="_blank" rel="noopener">Maurizio Napolitano</a></div></li>
+      <li><span class="note-src-ico">🤝</span><div><a href="https://www.linkedin.com/in/nelsonmau/" target="_blank" rel="noopener">Andrea Nelson Mauro</a></div></li>
+    </ul>
+
     </div>
 
     </div>
@@ -661,6 +704,12 @@
   </div>
 </div>
 
-<script src="js/main.js?v=22"></script>
+<div id="draw-hint">
+  <span id="draw-hint-text">Clicca sulla mappa per aggiungere i punti dell'area, poi conferma</span>
+  <button id="draw-hint-done" disabled>✓ Fine</button>
+  <button id="draw-hint-cancel">Annulla</button>
+</div>
+
+<script src="js/main.js?v=25"></script>
 </body>
 </html>
