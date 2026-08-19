@@ -98,7 +98,7 @@ class BordersControl {
     btn.id = 'borders-toggle-btn';
     btn.type = 'button';
     btn.title = 'Mostra/nascondi i bordi dei poligoni';
-    btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 8 12 4l7 4-2 9H7L5 8Z"/><circle cx="5" cy="8" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="4" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="8" r="1.6" fill="currentColor" stroke="none"/><circle cx="17" cy="17" r="1.6" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r="1.6" fill="currentColor" stroke="none"/></svg>';
     btn.addEventListener('click', toggleBorders);
     this._container.appendChild(btn);
     return this._container;
