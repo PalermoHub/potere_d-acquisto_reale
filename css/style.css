@@ -40,20 +40,21 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 .dial-fab:hover{filter:brightness(1.1)}
 .dial-fab.open{background:#3a6fd6}
 .dial-items{
-  display:flex;flex-direction:column;gap:8px;align-items:center;
+  display:flex;flex-direction:column;gap:6px;align-items:center;
   max-height:0;opacity:0;overflow:hidden;margin-top:0;
   transition:max-height .3s ease,opacity .2s ease,margin-top .3s ease;
 }
-/* 600px copre tutti gli item attuali (10 × 38px + 9 gap = 452px) con margine
-   per aggiunte future; su schermi bassi si aggiunge lo scroll invece di tagliare
-   in silenzio l'ultimo pulsante (successo con l'aggiunta delle viste Redditi). */
+/* 14 item × 34px + 13 gap × 6px = 554px: il cap a 700px lascia margine per
+   aggiunte future restando sotto viewport pieno; su schermi bassi lo scroll
+   subentra invece di tagliare in silenzio l'ultimo pulsante (successo con
+   l'aggiunta delle viste Redditi). */
 .dial-items.open{
-  max-height:min(600px, calc(100vh - 100px));
+  max-height:min(700px, calc(100vh - 60px));
   opacity:1;margin-top:8px;overflow-y:auto;
   scrollbar-width:thin;
 }
 .dial-item{
-  width:38px;height:38px;border-radius:50%;background:#fff;border:none;color:#333;
+  width:34px;height:34px;border-radius:50%;background:#fff;border:none;color:#333;
   display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
   box-shadow:0 2px 6px rgba(0,0,0,.35);opacity:0;transform:translateY(-8px);
   transition:opacity .2s ease,transform .2s ease,background .15s,color .15s;
@@ -79,6 +80,33 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 .opacity-row{display:flex;align-items:center;gap:10px}
 .opacity-row input[type="range"]{width:130px;accent-color:var(--accent)}
 .opacity-row span{font-size:12px;color:var(--text);min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+
+#embed-panel{
+  position:absolute;top:40px;left:78px;z-index:8;
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:10px;
+  box-shadow:0 4px 16px rgba(0,0,0,.35);padding:12px 14px;width:280px;
+  display:none;opacity:0;transform:translateX(-6px);
+  transition:opacity .15s ease,transform .15s ease;
+}
+#embed-panel.open{display:block;opacity:1;transform:translateX(0)}
+#embed-panel label{display:block;font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:.02em;margin-bottom:6px;white-space:nowrap}
+#embed-code{
+  width:100%;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;
+  background:var(--overlay-1);color:var(--text);border:1px solid var(--panel-border);border-radius:6px;padding:8px;
+}
+.embed-row{display:flex;align-items:center;gap:6px;margin-top:8px}
+.embed-row label{margin-bottom:0;flex-shrink:0}
+.embed-row input[type="text"]{
+  width:56px;background:var(--overlay-1);color:var(--text);border:1px solid var(--panel-border);
+  border-radius:5px;padding:4px 6px;font-size:12px;
+}
+.embed-row span{font-size:11px;color:var(--text-dim)}
+#embed-copy-btn{
+  margin-top:10px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;
+  padding:8px;font-size:12px;font-weight:600;cursor:pointer;transition:filter .15s;
+}
+#embed-copy-btn:hover{filter:brightness(1.1)}
+#embed-copy-btn.copied{background:#3f8f6b}
 
 .view-warning{
   margin-top:12px;background:#3a2a0e;border:1px solid #7a5a1a;color:#f0c869;

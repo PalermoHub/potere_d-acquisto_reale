@@ -1191,6 +1191,8 @@ dialItems.querySelectorAll('.dial-item').forEach(btn => {
       toggleSatellite();
     } else if (btn.dataset.action === 'opacity') {
       opacityPanel.classList.contains('open') ? closeOpacityPanel() : openOpacityPanel();
+    } else if (btn.dataset.action === 'embed') {
+      embedPanel.classList.contains('open') ? closeEmbedPanel() : openEmbedPanel();
     } else if (btn.dataset.view) {
       switchView(btn.dataset.view);
     }
@@ -1219,6 +1221,50 @@ opacitySlider.addEventListener('input', () => {
 });
 document.addEventListener('click', (e) => {
   if (!e.target.closest('#opacity-panel') && !e.target.closest('#opacity-dial-btn')) closeOpacityPanel();
+});
+
+/* ── Pannellino embed: genera l'iframe con l'URL corrente (che gia' porta
+   vista/filtri in query string via updateUrl), cosi' il sito che incorpora
+   la mappa riparte esattamente dalla stessa vista. ── */
+const embedPanel = document.getElementById('embed-panel');
+const embedDialBtn = document.getElementById('embed-dial-btn');
+const embedCode = document.getElementById('embed-code');
+const embedWidth = document.getElementById('embed-width');
+const embedHeight = document.getElementById('embed-height');
+const embedCopyBtn = document.getElementById('embed-copy-btn');
+
+const EMBED_BASE_URL = 'https://palermohub.github.io/potere_d-acquisto_reale/';
+
+function buildEmbedCode() {
+  const w = embedWidth.value.trim() || '100%';
+  const h = embedHeight.value.trim() || '600';
+  const height = /^\d+$/.test(h) ? `${h}px` : h;
+  const width = /^\d+$/.test(w) ? `${w}px` : w;
+  const src = EMBED_BASE_URL + window.location.search + window.location.hash;
+  return `<iframe src="${src}" width="${width}" height="${height}" style="border:0" loading="lazy" title="Potere d'acquisto reale — mappa interattiva"></iframe>`;
+}
+function refreshEmbedCode() { embedCode.value = buildEmbedCode(); }
+
+function openEmbedPanel() { refreshEmbedCode(); embedPanel.classList.add('open'); embedDialBtn.classList.add('active'); }
+function closeEmbedPanel() { embedPanel.classList.remove('open'); embedDialBtn.classList.remove('active'); }
+
+embedWidth.addEventListener('input', refreshEmbedCode);
+embedHeight.addEventListener('input', refreshEmbedCode);
+embedCode.addEventListener('click', () => embedCode.select());
+embedCopyBtn.addEventListener('click', async () => {
+  refreshEmbedCode();
+  try {
+    await navigator.clipboard.writeText(embedCode.value);
+  } catch {
+    embedCode.select();
+    document.execCommand('copy');
+  }
+  embedCopyBtn.textContent = 'Copiato!';
+  embedCopyBtn.classList.add('copied');
+  setTimeout(() => { embedCopyBtn.textContent = 'Copia codice'; embedCopyBtn.classList.remove('copied'); }, 1500);
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#embed-panel') && !e.target.closest('#embed-dial-btn')) closeEmbedPanel();
 });
 
 function toggleFullscreen() {
