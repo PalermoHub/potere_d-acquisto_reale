@@ -179,6 +179,12 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 #ods-logo, .maplibregl-ctrl-bottom-right{transition:right .28s ease}
 body.side-panel-open #ods-logo, body.side-panel-open .maplibregl-ctrl-bottom-right{right:362px!important}
 
+.maplibregl-ctrl-top-right{top:40px;transition:right .28s ease}
+body.side-panel-open .maplibregl-ctrl-top-right{right:362px!important}
+#borders-toggle-btn{display:flex;align-items:center;justify-content:center;width:29px;height:29px;padding:0;background:#fff;border:none;color:#333;cursor:pointer}
+#borders-toggle-btn:hover{background:#f2f2f2}
+#borders-toggle-btn.active{background:var(--accent);color:#fff}
+
 .maplibregl-popup-content{
   background:var(--panel)!important;color:var(--text)!important;
   border:1px solid var(--panel-border);border-radius:10px;padding:12px 14px!important;
@@ -213,6 +219,7 @@ body.side-panel-open #ods-logo, body.side-panel-open .maplibregl-ctrl-bottom-rig
   /* Su mobile il pannello copre il logo/attribuzione (z-index maggiore): niente
      scostamento verso sinistra, sarebbe fuori schermo su schermi stretti. */
   body.side-panel-open #ods-logo, body.side-panel-open .maplibregl-ctrl-bottom-right{right:12px!important}
+  body.side-panel-open .maplibregl-ctrl-top-right{right:12px!important}
   #ods-logo img{height:56px}
   #geo-search-area{bottom:20px;width:80%}
 }

@@ -85,6 +85,27 @@ const map = new maplibregl.Map({
 map.touchZoomRotate.disableRotation();
 
 map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+/* Pulsantino bordi comuni, sotto i +/- zoom: custom IControl così finisce
+   nello stesso gruppo top-right e si sposta in sincro col pannello dx tramite
+   la regola CSS .maplibregl-ctrl-top-right già usata per i controlli nativi. */
+class BordersControl {
+  onAdd() {
+    this._container = document.createElement('div');
+    this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+    const btn = document.createElement('button');
+    btn.id = 'borders-toggle-btn';
+    btn.type = 'button';
+    btn.title = 'Mostra/nascondi i bordi dei poligoni';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>';
+    btn.addEventListener('click', toggleBorders);
+    this._container.appendChild(btn);
+    return this._container;
+  }
+  onRemove() { this._container.remove(); }
+}
+map.addControl(new BordersControl(), 'top-right');
 requestAnimationFrame(() => {
   document.querySelectorAll('.maplibregl-ctrl-attrib.maplibregl-compact-show')
     .forEach(el => el.classList.remove('maplibregl-compact-show'));
@@ -263,6 +284,10 @@ function popupRedditiComuni(props) {
 }
 
 let hoveredId = null;
+function clearHover() {
+  if (hoveredId) map.setFeatureState(hoveredId, { hover: false });
+  hoveredId = null;
+}
 
 function addViewLayers(view) {
   const cfg = VIEWS[view];
@@ -271,7 +296,7 @@ function addViewLayers(view) {
   const lineId = `${view}-line`;
   const hoverId = `${view}-hover-line`;
 
-  if (!cfg.sharedSource) map.addSource(srcId, { type: 'vector', url: `pmtiles://${cfg.pmtiles}` });
+  if (!cfg.sharedSource) map.addSource(srcId, { type: 'vector', url: `pmtiles://${cfg.pmtiles}`, promoteId: cfg.idField });
 
   const fillColor = cfg.bivariate
     ? bivarColorExpr(cfg.bivarField)
@@ -305,26 +330,29 @@ function addViewLayers(view) {
   });
   map.addLayer({
     id: hoverId, type: 'line', source: srcId, 'source-layer': cfg.sourceLayer,
-    paint: { 'line-color': '#ffffff', 'line-width': 1.6, 'line-opacity': active ? 1 : 0 },
-    filter: ['==', ['get', cfg.idField], '']
+    paint: {
+      'line-color': '#ffffff', 'line-width': 1.6,
+      'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0]
+    }
   });
 
+  /* Highlight via feature-state (non setFilter): setFilter ricalcola l'intero
+     layer a ogni mousemove ed è pesante su migliaia di poligoni, causando un
+     ritardo visibile — il bordo del comune precedente non si spegne subito e
+     resta una "scia" di comuni illuminati mentre il mouse scorre veloce. */
   map.on('mousemove', fillId, (e) => {
-    if (view !== currentView) return;
+    if (view !== currentView || !e.features.length) return;
     map.getCanvas().style.cursor = 'pointer';
-    if (e.features.length) {
-      const id = e.features[0].properties[cfg.idField];
-      if (id !== hoveredId) {
-        hoveredId = id;
-        map.setFilter(hoverId, ['==', ['get', cfg.idField], id]);
-      }
-    }
+    const id = e.features[0].id;
+    if (hoveredId && hoveredId.id === id && hoveredId.source === srcId) return;
+    clearHover();
+    hoveredId = { source: srcId, sourceLayer: cfg.sourceLayer, id };
+    map.setFeatureState(hoveredId, { hover: true });
   });
   map.on('mouseleave', fillId, () => {
     if (view !== currentView) return;
     map.getCanvas().style.cursor = '';
-    hoveredId = null;
-    map.setFilter(hoverId, ['==', ['get', cfg.idField], '']);
+    clearHover();
   });
   map.on('click', fillId, (e) => {
     if (view !== currentView) return;
@@ -347,23 +375,40 @@ map.on('load', () => {
   addViewLayers('bivariataReddito');
   addViewLayers('redditi');
   addViewLayers('redditiComuni');
+  applyBorders();
   document.getElementById('map-loader').style.display = 'none';
 });
 
 function switchView(view) {
   if (view === currentView) return;
+  clearHover();
   currentView = view;
   for (const v of Object.keys(VIEWS)) {
     const isActive = v === view;
     map.setPaintProperty(`${v}-fill`, 'fill-opacity', isActive ? 0.82 : 0);
-    map.setPaintProperty(`${v}-line`, 'line-opacity', 0);
-    map.setPaintProperty(`${v}-hover-line`, 'line-opacity', isActive ? 1 : 0);
-    if (!isActive) map.setFilter(`${v}-hover-line`, ['==', ['get', VIEWS[v].idField], '']);
+    map.setPaintProperty(`${v}-line`, 'line-opacity', isActive && bordersOn ? 0.8 : 0);
+    map.setPaintProperty(`${v}-hover-line`, 'line-opacity', isActive
+      ? ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0] : 0);
   }
   document.querySelectorAll('#dial-items [data-view]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === view);
   });
   setActiveTab(view);
+}
+
+/* ── Bordi comuni/province: pulsante sotto lo zoom, attiva/disattiva il
+   layer "line" (già presente per ogni vista, finora sempre a opacità 0). ── */
+const BORDERS_KEY = 'poteredacquisto-borders';
+let bordersOn = localStorage.getItem(BORDERS_KEY) === '1';
+function applyBorders() {
+  map.setPaintProperty(`${currentView}-line`, 'line-opacity', bordersOn ? 0.8 : 0);
+  const btn = document.getElementById('borders-toggle-btn');
+  if (btn) btn.classList.toggle('active', bordersOn);
+}
+function toggleBorders() {
+  bordersOn = !bordersOn;
+  localStorage.setItem(BORDERS_KEY, bordersOn ? '1' : '0');
+  applyBorders();
 }
 
 /* ── Pannello dx: tab Comuni/Province/Bivariata, sempre sincronizzato con
