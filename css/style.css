@@ -206,7 +206,6 @@ body.side-panel-open #ods-logo, body.side-panel-open .maplibregl-ctrl-bottom-rig
      impostata da JS all'avvio) e si apre da solo quando switchView() viene
      chiamato dal menu a tendina, richiudibile con la ✕. */
   #side-panel{width:min(280px,86vw)}
-  #panel-toggle{display:none}
   #panel-close-mobile{
     display:flex;position:absolute;top:8px;right:8px;z-index:1;
     background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;padding:6px;
