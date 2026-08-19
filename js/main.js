@@ -12,6 +12,7 @@ const CARTO_TILES = {
   light: ['a', 'b', 'c', 'd'].map(s => `https://${s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png`)
 };
 const MAP_BG = { dark: '#0b0d12', light: '#e8e4d8' };
+const BORDER_COLOR = { dark: 'rgba(255,255,255,.6)', light: 'rgba(30,30,30,.55)' };
 
 const VIEWS = {
   comuni: {
@@ -368,6 +369,37 @@ function addViewLayers(view) {
   });
 }
 
+/* ── Bordi amministrativi (regione/provincia/comune): layer indipendenti
+   dalla vista scelta, sempre presenti sulla mappa e attivabili col pulsante
+   sotto lo zoom. Ognuno visibile solo nella sua fascia di zoom, con dissolvenza
+   incrociata così il passaggio da un livello all'altro non è un salto secco.
+   Le fonti "comuni" e "province" sono già caricate per le viste dati (niente
+   doppio fetch); i confini regionali arrivano da un pmtiles dedicato, perché
+   nessuna vista dati esiste già a livello di regione. ── */
+const BORDER_LEVELS = [
+  { id: 'confini-regioni', srcId: 'src-confini-regioni', sourceLayer: 'regioni',
+    stops: [4, 0, 4.3, 1, 6.5, 1, 7.5, 0] },
+  { id: 'confini-province', srcId: 'src-province', sourceLayer: VIEWS.province.sourceLayer,
+    stops: [5.5, 0, 6.5, 1, 8.5, 1, 9.5, 0] },
+  { id: 'confini-comuni', srcId: 'src-comuni', sourceLayer: VIEWS.comuni.sourceLayer,
+    stops: [7.5, 0, 8.5, 1, 10, 1] }
+];
+
+function addBorderLayers() {
+  map.addSource('src-confini-regioni', { type: 'vector', url: 'pmtiles://dist/geo/confini_regioni.pmtiles' });
+  for (const lvl of BORDER_LEVELS) {
+    map.addLayer({
+      id: lvl.id, type: 'line', source: lvl.srcId, 'source-layer': lvl.sourceLayer,
+      layout: { visibility: bordersOn ? 'visible' : 'none' },
+      paint: {
+        'line-color': BORDER_COLOR[currentTheme],
+        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.5, 10, 1.4],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], ...lvl.stops]
+      }
+    });
+  }
+}
+
 map.on('load', () => {
   addViewLayers('comuni');
   addViewLayers('province');
@@ -375,6 +407,7 @@ map.on('load', () => {
   addViewLayers('bivariataReddito');
   addViewLayers('redditi');
   addViewLayers('redditiComuni');
+  addBorderLayers();
   applyBorders();
   document.getElementById('map-loader').style.display = 'none';
 });
@@ -386,7 +419,6 @@ function switchView(view) {
   for (const v of Object.keys(VIEWS)) {
     const isActive = v === view;
     map.setPaintProperty(`${v}-fill`, 'fill-opacity', isActive ? 0.82 : 0);
-    map.setPaintProperty(`${v}-line`, 'line-opacity', isActive && bordersOn ? 0.8 : 0);
     map.setPaintProperty(`${v}-hover-line`, 'line-opacity', isActive
       ? ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0] : 0);
   }
@@ -396,12 +428,15 @@ function switchView(view) {
   setActiveTab(view);
 }
 
-/* ── Bordi comuni/province: pulsante sotto lo zoom, attiva/disattiva il
-   layer "line" (già presente per ogni vista, finora sempre a opacità 0). ── */
+/* ── Pulsante bordi sotto lo zoom: mostra/nasconde tutti e tre i livelli di
+   confine insieme (regione/provincia/comune), ognuno visibile solo alla sua
+   fascia di zoom via BORDER_LEVELS. ── */
 const BORDERS_KEY = 'poteredacquisto-borders';
 let bordersOn = localStorage.getItem(BORDERS_KEY) === '1';
 function applyBorders() {
-  map.setPaintProperty(`${currentView}-line`, 'line-opacity', bordersOn ? 0.8 : 0);
+  for (const lvl of BORDER_LEVELS) {
+    if (map.getLayer(lvl.id)) map.setLayoutProperty(lvl.id, 'visibility', bordersOn ? 'visible' : 'none');
+  }
   const btn = document.getElementById('borders-toggle-btn');
   if (btn) btn.classList.toggle('active', bordersOn);
 }
@@ -805,6 +840,9 @@ function setTheme(theme) {
   const src = map.getSource('carto-base');
   if (src) src.setTiles(CARTO_TILES[theme]);
   if (map.getLayer('bg')) map.setPaintProperty('bg', 'background-color', MAP_BG[theme]);
+  for (const lvl of BORDER_LEVELS) {
+    if (map.getLayer(lvl.id)) map.setPaintProperty(lvl.id, 'line-color', BORDER_COLOR[theme]);
+  }
 }
 
 const dialFab = document.getElementById('dial-fab');
