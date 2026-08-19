@@ -118,8 +118,8 @@ class BordersControl {
     const btn = document.createElement('button');
     btn.id = 'borders-toggle-btn';
     btn.type = 'button';
-    btn.title = 'Mostra/nascondi i bordi dei poligoni';
-    btn.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 8 12 4l7 4-2 9H7L5 8Z"/><circle cx="5" cy="8" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="4" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="8" r="1.6" fill="currentColor" stroke="none"/><circle cx="17" cy="17" r="1.6" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r="1.6" fill="currentColor" stroke="none"/></svg>';
+    btn.title = 'Mostra/nascondi limiti amministrativi';
+    btn.innerHTML = '<span class="italia-icon"></span>';
     btn.addEventListener('click', toggleBorders);
     this._container.appendChild(btn);
     return this._container;
@@ -469,8 +469,8 @@ function switchView(view) {
 /* ── Pulsante bordi sotto lo zoom: mostra/nasconde tutti e tre i livelli di
    confine insieme (regione/provincia/comune), ognuno visibile solo alla sua
    fascia di zoom via BORDER_LEVELS. ── */
-const BORDERS_KEY = 'poteredacquisto-borders';
-let bordersOn = localStorage.getItem(BORDERS_KEY) === '1';
+const BORDERS_KEY = 'poteredacquisto-borders-v2';
+let bordersOn = localStorage.getItem(BORDERS_KEY) !== '0';
 function applyBorders() {
   for (const lvl of BORDER_LEVELS) {
     if (map.getLayer(lvl.id)) map.setLayoutProperty(lvl.id, 'visibility', bordersOn ? 'visible' : 'none');

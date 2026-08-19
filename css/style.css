@@ -204,6 +204,13 @@ body.side-panel-open .maplibregl-ctrl-top-right{right:362px!important}
 #borders-toggle-btn{display:flex;align-items:center;justify-content:center;width:29px;height:29px;padding:0;background:#fff;border:none;color:#333;cursor:pointer}
 #borders-toggle-btn:hover{background:#f2f2f2}
 #borders-toggle-btn.active{background:var(--accent);color:#fff}
+.italia-icon{
+  display:inline-block;width:13px;height:16px;background-color:currentColor;
+  -webkit-mask-image:url('../img/italy.png');mask-image:url('../img/italy.png');
+  -webkit-mask-size:contain;mask-size:contain;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center;
+}
 
 .maplibregl-popup-content{
   background:var(--panel)!important;color:var(--text)!important;
