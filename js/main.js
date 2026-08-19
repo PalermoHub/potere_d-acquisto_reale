@@ -290,6 +290,10 @@ function popupRedditiComuni(props) {
   `;
 }
 
+const FILL_OPACITY_KEY = 'poteredacquisto-fill-opacity';
+const storedFillOpacity = parseFloat(localStorage.getItem(FILL_OPACITY_KEY));
+let fillOpacity = Number.isFinite(storedFillOpacity) ? storedFillOpacity : 0.82;
+
 let hoveredId = null;
 function clearHover() {
   if (hoveredId) map.setFeatureState(hoveredId, { hover: false });
@@ -332,7 +336,7 @@ function addViewLayers(view) {
     id: fillId, type: 'fill', source: srcId, 'source-layer': cfg.sourceLayer,
     paint: {
       'fill-color': fillColor,
-      'fill-opacity': active ? 0.82 : 0,
+      'fill-opacity': active ? fillOpacity : 0,
       'fill-opacity-transition': { duration: 260 },
       'fill-antialias': false
     }
@@ -438,7 +442,7 @@ function switchView(view) {
   currentView = view;
   for (const v of Object.keys(VIEWS)) {
     const isActive = v === view;
-    map.setPaintProperty(`${v}-fill`, 'fill-opacity', isActive ? 0.82 : 0);
+    map.setPaintProperty(`${v}-fill`, 'fill-opacity', isActive ? fillOpacity : 0);
     map.setPaintProperty(`${v}-hover-line`, 'line-opacity', isActive
       ? ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0] : 0);
   }
@@ -888,11 +892,36 @@ dialItems.querySelectorAll('.dial-item').forEach(btn => {
       setTheme(currentTheme === 'dark' ? 'light' : 'dark');
     } else if (btn.dataset.action === 'fullscreen') {
       toggleFullscreen();
+    } else if (btn.dataset.action === 'opacity') {
+      opacityPanel.classList.contains('open') ? closeOpacityPanel() : openOpacityPanel();
     } else if (btn.dataset.view) {
       switchView(btn.dataset.view);
     }
     closeDial();
   });
+});
+
+/* ── Pannellino trasparenza poligoni: applica l'opacita del fill solo al
+   layer della vista attiva (le altre restano a 0), quindi ogni switchView
+   deve riusare la stessa variabile invece di un valore fisso. ── */
+const opacityPanel = document.getElementById('opacity-panel');
+const opacityDialBtn = document.getElementById('opacity-dial-btn');
+const opacitySlider = document.getElementById('opacity-slider');
+const opacityValueEl = document.getElementById('opacity-value');
+opacitySlider.value = Math.round(fillOpacity * 100);
+opacityValueEl.textContent = `${opacitySlider.value}%`;
+
+function openOpacityPanel() { opacityPanel.classList.add('open'); opacityDialBtn.classList.add('active'); }
+function closeOpacityPanel() { opacityPanel.classList.remove('open'); opacityDialBtn.classList.remove('active'); }
+
+opacitySlider.addEventListener('input', () => {
+  fillOpacity = parseInt(opacitySlider.value, 10) / 100;
+  opacityValueEl.textContent = `${opacitySlider.value}%`;
+  localStorage.setItem(FILL_OPACITY_KEY, String(fillOpacity));
+  if (map.getLayer(`${currentView}-fill`)) map.setPaintProperty(`${currentView}-fill`, 'fill-opacity', fillOpacity);
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#opacity-panel') && !e.target.closest('#opacity-dial-btn')) closeOpacityPanel();
 });
 
 function toggleFullscreen() {
