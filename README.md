@@ -130,7 +130,7 @@ pip install duckdb pandas
 - Redditi comuni riusa la stessa sorgente vettoriale della vista Comuni (nessun tile duplicato): solo lo stile del layer cambia
 - Popup al click con dettaglio per comune/provincia, inclusa la fonte del dato costo-vita (viste Comuni/Province) o il reddito nominale (viste Redditi)
 - Banner di avviso permanente nelle viste Province (correzione minima) e Redditi/Redditi comuni (dato nominale, non potere d'acquisto)
-- Classifiche con sotto-livelli Comuni/Regioni o Province/Regioni, filtro "solo quest'area della mappa" e ricerca geografica condivisa fra le viste
+- Classifiche con sotto-livelli Comuni/Regioni o Province/Regioni, ricerca geografica condivisa fra le viste, e due filtri di ambito: "solo quest'area della mappa" (viewport) o un'area disegnata a mano sulla mappa (poligono punto per punto); su area multi-regione/provincia la classifica si organizza in un accordion coi primi/ultimi 5 per gruppo territoriale
 - Pannello "Note metodologiche" completo (formula, fonti, limiti, licenza)
 
 ### Nota tecnica: server locale
@@ -168,6 +168,12 @@ Aggregando la vista Comuni per macroarea (dati 2024/2025):
 | Sud e Isole | 19.686 € | 25.555 € | +29,8% |
 
 Il divario nominale Nord-Sud (~25%) si riduce a **~2,5%** dopo la correzione per costo della vita — coerente con la letteratura economica (Banca d'Italia, SVIMEZ) sul restringimento del divario reale Nord-Sud una volta corretto per il costo della vita locale, pur senza ribaltarsi completamente.
+
+---
+
+## Ringraziamenti
+
+Un ringraziamento per il supporto e i consigli durante lo sviluppo a [Andrea Borruso](https://www.linkedin.com/in/andreaborruso/), [Pier Francesco Paolicelli](https://www.linkedin.com/in/piersoft/), [Maurizio Napolitano](https://www.linkedin.com/in/napolnx/) e [Andrea Nelson Mauro](https://www.linkedin.com/in/nelsonmau/).
 
 ---
 

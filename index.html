@@ -90,6 +90,9 @@
     <button class="dial-item" data-view="bivariataReddito" title="Vista Bivariata reddito: incrocia reddito nominale e potere d'acquisto reale in 9 classi, per vedere dove i due divergono di più">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M6.5 6.5v7M17.5 6.5v7"/></svg>
     </button>
+    <button class="dial-item" data-view="bivariataOmi" title="Vista Prezzi vs reddito — deep dive OMI: incrocia reddito nominale e quotazione OMI diretta (senza passare dal costo vita stimato) in 9 classi">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2 2 9.5l10 6L22 9.5 12 2Zm-8 10 8 5.5 8-5.5v3l-8 5.5-8-5.5v-3Z"/></svg>
+    </button>
     <button class="dial-item" data-action="ranking" title="Classifiche — i 10 comuni/province/regioni dove si vive meglio e peggio">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M4 21h4V9H4v12Zm6 0h4V3h-4v18Zm6 0h4v-8h-4v8Z"/></svg>
     </button>
@@ -139,6 +142,7 @@
     <button class="tab-hdr" data-view="redditiComuni">Redditi comuni</button>
     <button class="tab-hdr" data-view="bivariata">Bivariata</button>
     <button class="tab-hdr" data-view="bivariataReddito">Bivariata reddito</button>
+    <button class="tab-hdr" data-view="bivariataOmi">Prezzi vs reddito</button>
     <button class="tab-hdr" data-view="capoluoghi">Classifica generale capoluoghi</button>
   </div>
 
@@ -466,6 +470,74 @@
       </div>
     </div>
 
+    <div class="tab-content" data-tab="bivariataOmi">
+      <div class="panel-title-box">
+        <h1>Prezzi immobiliari vs reddito</h1>
+        <p class="panel-tagline">Deep dive OMI: prezzo diretto al m², non il costo vita stimato che ne deriva.</p>
+        <p>Incrocio fra reddito medio IRPEF <b>2024</b> e quotazione OMI diretta <b>2° sem. 2025</b> (terzili): dove la casa costa cara rispetto a quanto si guadagna, e dove no. Solo comuni con quotazione OMI diretta (no fallback provinciale/nazionale). Clicca su un comune per i dettagli.</p>
+      </div>
+      <div id="legend-bivar-omi">
+        <div class="bivar-title">Classe bivariata</div>
+        <div class="bivar-sub">Click su una cella per filtrare la mappa</div>
+        <div class="bivar-colheads">
+          <span></span><span>basso</span><span>medio</span><span>alto</span>
+        </div>
+        <div class="bivar-body">
+          <div class="bivar-ylabel">prezzo OMI &uarr;</div>
+          <div class="bivar-rows">
+            <div class="bivar-rowline">
+              <span class="rowlabel">alto</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="13" style="background:#64acbe" title="Reddito basso · Prezzo OMI alto"></span>
+                <span class="bs" data-class="23" style="background:#627f8c" title="Reddito medio · Prezzo OMI alto"></span>
+                <span class="bs" data-class="33" style="background:#574249" title="Reddito alto · Prezzo OMI alto"></span>
+              </div>
+            </div>
+            <div class="bivar-rowline">
+              <span class="rowlabel">medio</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="12" style="background:#b0d5df" title="Reddito basso · Prezzo OMI medio"></span>
+                <span class="bs" data-class="22" style="background:#ad9ea5" title="Reddito medio · Prezzo OMI medio"></span>
+                <span class="bs" data-class="32" style="background:#985356" title="Reddito alto · Prezzo OMI medio"></span>
+              </div>
+            </div>
+            <div class="bivar-rowline">
+              <span class="rowlabel">basso</span>
+              <div class="bivar-grid">
+                <span class="bs" data-class="11" style="background:#e8e8e8" title="Reddito basso · Prezzo OMI basso"></span>
+                <span class="bs" data-class="21" style="background:#e4acac" title="Reddito medio · Prezzo OMI basso"></span>
+                <span class="bs" data-class="31" style="background:#c85a5a" title="Reddito alto · Prezzo OMI basso"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bivar-xlabel">reddito &rarr;</div>
+        <div class="bivar-static-row"><span class="swatch" style="background:#5a6472"></span><span>Nessuna quotazione OMI diretta</span></div>
+        <div class="bivar-hover"></div>
+        <button class="bivar-clear" style="display:none">&times; rimuovi filtro classe</button>
+      </div>
+      <div class="view-warning">
+        ⚠ In grigio i comuni senza quotazione OMI diretta (424 su 7.890): esclusi dall'incrocio, ma mostrati comunque per non farli sparire senza spiegazione dalla mappa.
+      </div>
+      <div class="view-warning">
+        ⚠ La cella più interessante è "reddito basso · prezzo OMI alto" (in alto a sinistra nella griglia): casa cara in un posto dove si guadagna poco, il segnale più diretto di pressione sul potere d'acquisto immobiliare — spesso zone turistiche o costiere con redditi locali bassi.
+      </div>
+
+      <hr class="panel-sep">
+      <div class="ranking-block">
+        <div class="ranking-block-header">
+          <h3>Classifica per classe</h3>
+        </div>
+        <div class="ranking-scope-btns">
+          <button class="ranking-scope-btn ranking-viewport-toggle" data-scope="bivariataOmi" aria-pressed="false" title="Limita la classifica ai comuni/province visibili nell'area di mappa inquadrata">📍 Solo l'area inquadrata</button>
+          <button class="ranking-scope-btn ranking-draw-toggle" data-scope="bivariataOmi" aria-pressed="false" title="Disegna a mano un'area sulla mappa per classificare solo ciò che ricade al suo interno">✏️ Disegna un'area</button>
+        </div>
+        <p class="ranking-subtitle">Le 9 classi dell'incrocio reddito nominale × prezzo OMI diretto. Clicca su una classe per vedere i comuni con prezzo OMI più alto in quella classe.</p>
+        <div class="bivar-class-accordion" id="bivar-class-accordion-omi"></div>
+        <p class="ranking-note">Solo comuni con almeno 1.000 contribuenti e quotazione OMI diretta, per evitare medie statisticamente rumorose sui centri molto piccoli.</p>
+      </div>
+    </div>
+
     <div class="tab-content" data-tab="capoluoghi">
       <div class="panel-title-box">
         <h1>Classifica generale capoluoghi</h1>
@@ -557,7 +629,7 @@
 
     <figure class="note-fig">
       <img src="img/guide/01-menu-dial.png" alt="Screenshot: mappa con il menu a tendina aperto in alto a sinistra" loading="lazy">
-      <figcaption>Il pulsante rotondo in alto a sinistra apre il menu con le viste (Comuni / Province / Redditi / Redditi comuni / Bivariata / Bivariata reddito), il tasto Home per tornare all'inquadratura iniziale, il tema chiaro/scuro, le Classifiche e questa guida.</figcaption>
+      <figcaption>Il pulsante rotondo in alto a sinistra apre il menu con le viste (Comuni / Province / Redditi / Redditi comuni / Bivariata / Bivariata reddito / Prezzi vs reddito), il tasto Home per tornare all'inquadratura iniziale, il tema chiaro/scuro, le Classifiche e questa guida.</figcaption>
     </figure>
 
     <h3><span class="note-h-ico">📊</span>Le classifiche</h3>
@@ -629,6 +701,7 @@
       <tr><td><b>Province</b></td><td>NIC Istat ufficiale, dove rilevato</td><td>Dato diretto, nessuna stima, ma correzione minima per il motivo sopra</td></tr>
       <tr><td><b>Bivariata</b></td><td>Stessa stima OMI della vista Comuni</td><td>Mostra reddito e costo vita come due terzili incrociati, invece di comprimerli nell'indice unico</td></tr>
       <tr><td><b>Bivariata reddito</b></td><td>Stessa stima OMI della vista Comuni</td><td>Incrocia reddito nominale (non corretto) e potere d'acquisto reale (corretto), invece di reddito e costo vita: mostra dove i due indicatori più divergono</td></tr>
+      <tr><td><b>Prezzi vs reddito</b></td><td>Quotazione OMI diretta (2° sem. 2025), non ricalcolata come differenziale</td><td>Incrocia reddito nominale 2024 e prezzo OMI al m² grezzo: deep dive sul mercato immobiliare, solo comuni con quotazione OMI diretta (no fallback)</td></tr>
       <tr><td><b>Redditi</b></td><td>Nessuna: reddito nominale</td><td>Reddito medio provinciale dichiarato, senza correzione. Tutte le 107 province, nessun dato mancante</td></tr>
       <tr><td><b>Redditi comuni</b></td><td>Nessuna: reddito nominale</td><td>Reddito medio comunale dichiarato, senza correzione. Stessa base geografica della vista Comuni</td></tr>
     </table>
@@ -649,6 +722,9 @@
 
     <h3>Vista Bivariata reddito, come si legge</h3>
     <p>Stessa griglia 3×3, ma gli assi sono diversi: non reddito × costo vita, bensì <b>reddito nominale</b> (il dato dichiarato al MEF, senza correzioni) × <b>potere d'acquisto reale</b> (già corretto per il costo della vita, la stessa metrica della vista Comuni). Risponde a una domanda diversa dalla Bivariata: non "dove si compensano reddito e costo vita", ma "dove il reddito dichiarato racconta una storia diversa dal potere d'acquisto effettivo". La cella più interessante è reddito nominale alto ma potere d'acquisto basso: un comune che sembra ricco guardando solo i redditi, ma dove il costo della vita elevato erode gran parte del vantaggio.</p>
+
+    <h3>Vista Prezzi vs reddito, come si legge</h3>
+    <p>Dati: reddito medio IRPEF <b>2024</b> (MEF) incrociato con la quotazione OMI diretta del <b>2° semestre 2025</b> (Agenzia delle Entrate) — gli stessi due periodi di riferimento delle altre viste, vedi nota sui periodi diversi più sotto. Stessa griglia 3×3 delle altre bivariate, ma qui l'asse verticale non è più il costo vita stimato (differenziale OMI rispetto alla media nazionale) né il potere d'acquisto reale, bensì la <b>quotazione OMI in €/m² così com'è</b>, senza alcuna trasformazione. Incrociata con il reddito nominale, risponde alla domanda più diretta: "in questo comune, quanto costa comprare casa rispetto a quanto si guadagna?". Solo i 7.466 comuni (su 7.890) con quotazione OMI diretta sono inclusi: qui non si applica il fallback su media provinciale/nazionale usato nella vista Comuni, perché mischiare un prezzo stimato con uno osservato falserebbe proprio il confronto che questa vista vuole mostrare. La cella più interessante è reddito basso · prezzo OMI alto: zone dove il mercato immobiliare è teso rispetto al potere d'acquisto locale (tipicamente coste, centri turistici, comuni satellite di grandi città).</p>
 
     <h3>Vista Comuni, come si stima il costo della vita</h3>
     <p>Si usa il valore OMI medio (€/m², Agenzia delle Entrate, abitazioni civili stato normale) del comune, rapportato alla media nazionale OMI. Dove OMI manca o è nullo (es. mercato immobiliare fermo in aree post-sisma) si usa la media provinciale, poi quella nazionale.</p>

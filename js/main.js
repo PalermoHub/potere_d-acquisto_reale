@@ -49,6 +49,14 @@ const VIEWS = {
     bivariate: true,
     bivarField: 'bivar2_class'
   },
+  bivariataOmi: {
+    pmtiles: 'dist/geo/potere_acquisto_bivariata_omi.pmtiles',
+    sourceLayer: 'comuni_bivariata_omi',
+    idField: 'pro_com',
+    nameField: 'comune',
+    bivariate: true,
+    bivarField: 'bivar3_class'
+  },
   redditi: {
     pmtiles: 'dist/geo/potere_acquisto_province.pmtiles',
     sourceLayer: 'province_potere_acquisto',
@@ -184,6 +192,7 @@ function bivarColorExpr(field) {
 }
 const BIVAR_COLOR_EXPR = bivarColorExpr('bivar_class');
 const BIVAR2_COLOR_EXPR = bivarColorExpr('bivar2_class');
+const BIVAR3_COLOR_EXPR = bivarColorExpr('bivar3_class');
 
 const fmtEuro = (v) => v == null ? 'n.d.' : Math.round(v).toLocaleString('it-IT') + ' €';
 const fmtEuroMq = (v) => v == null ? 'n.d.' : Math.round(v).toLocaleString('it-IT') + ' €/m²';
@@ -263,6 +272,33 @@ function popupBivariataReddito(props) {
     <div class="pop-row"><span class="k">Classe bivariata</span><span class="v pop-badge" style="background:${bg};color:${fg}">reddito ${TERZILE_LABEL[props.terzile_reddito_nom]} · potere d'acquisto ${TERZILE_LABEL[props.terzile_pot_acquisto]}</span></div>
     <div class="pop-row"><span class="k">Reddito medio IRPEF (nominale)</span><span class="v">${fmtEuro(props.reddito_medio_euro)} <i>(${TERZILE_LABEL[props.terzile_reddito_nom]})</i></span></div>
     <div class="pop-row"><span class="k">Potere d'acquisto reale</span><span class="v">${fmtEuro(props.potere_acquisto_reale)} <i>(${TERZILE_LABEL[props.terzile_pot_acquisto]})</i></span></div>
+    <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    <div class="pop-row"><span class="k">Popolazione (2025)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+    ${popRatioRow(props)}
+  `;
+}
+
+function popupBivariataOmi(props) {
+  const cls = props.bivar3_class;
+  if (cls == null) {
+    return `
+      <div class="pop-title">${props.comune} (${props.sigla_prov})</div>
+      <div class="pop-row"><span class="k">Regione</span><span class="v">${REGIONE_LABEL(props.regione)}</span></div>
+      <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)}</span></div>
+      <div class="pop-warn">⚠ Nessuna quotazione OMI diretta per questo comune: escluso da questa vista (niente fallback provinciale/nazionale qui, a differenza della vista Comuni).</div>
+      <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
+      <div class="pop-row"><span class="k">Popolazione (2025)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
+      ${popRatioRow(props)}
+    `;
+  }
+  const bg = BIVAR_COLOR_MAP[cls] || '#5a6472';
+  const fg = textOnColor(bg);
+  return `
+    <div class="pop-title">${props.comune} (${props.sigla_prov})</div>
+    <div class="pop-row"><span class="k">Regione</span><span class="v">${REGIONE_LABEL(props.regione)}</span></div>
+    <div class="pop-row"><span class="k">Classe bivariata</span><span class="v pop-badge" style="background:${bg};color:${fg}">reddito ${TERZILE_LABEL[props.terzile_reddito]} · prezzo OMI ${TERZILE_LABEL[props.terzile_omi]}</span></div>
+    <div class="pop-row"><span class="k">Reddito medio IRPEF</span><span class="v">${fmtEuro(props.reddito_medio_euro)} <i>(${TERZILE_LABEL[props.terzile_reddito]})</i></span></div>
+    <div class="pop-row"><span class="k">Prezzo OMI</span><span class="v">${fmtEuroMq(props.omi_eur_mq)} <i>(${TERZILE_LABEL[props.terzile_omi]})</i></span></div>
     <div class="pop-row"><span class="k">Contribuenti</span><span class="v">${props.n_contribuenti != null ? props.n_contribuenti.toLocaleString('it-IT') : 'n.d.'}</span></div>
     <div class="pop-row"><span class="k">Popolazione (2025)</span><span class="v">${props.popolazione != null ? props.popolazione.toLocaleString('it-IT') : 'n.d.'}</span></div>
     ${popRatioRow(props)}
@@ -396,6 +432,7 @@ function addViewLayers(view) {
     if (view !== currentView || drawScope) return;
     const props = e.features[0].properties;
     const html = view === 'bivariataReddito' ? popupBivariataReddito(props)
+      : view === 'bivariataOmi' ? popupBivariataOmi(props)
       : cfg.bivariate ? popupBivariata(props)
       : view === 'comuni' ? popupComuni(props)
       : view === 'redditi' ? popupRedditi(props)
@@ -442,6 +479,7 @@ map.on('load', () => {
   addViewLayers('province');
   addViewLayers('bivariata');
   addViewLayers('bivariataReddito');
+  addViewLayers('bivariataOmi');
   addViewLayers('redditi');
   addViewLayers('redditiComuni');
   addBorderLayers();
@@ -585,6 +623,7 @@ const RANKING_STATE = {
   province:      { unit: 'province',      viewport: false, polygonRing: null },
   bivariata:        { unit: 'comuni', viewport: false, polygonRing: null },
   bivariataReddito: { unit: 'comuni', viewport: false, polygonRing: null },
+  bivariataOmi:     { unit: 'comuni', viewport: false, polygonRing: null },
   redditi:       { unit: 'redditi',       viewport: false, polygonRing: null },
   redditiComuni: { unit: 'redditi_comuni', viewport: false, polygonRing: null }
 };
@@ -808,11 +847,23 @@ const BIVAR2_CLASS_LABEL = {
   '13': 'reddito nominale basso · potere d\'acquisto alto', '23': 'reddito nominale medio · potere d\'acquisto alto', '33': 'reddito nominale alto · potere d\'acquisto alto'
 };
 
+const BIVAR3_CLASS_LABEL = {
+  '11': 'reddito basso · prezzo OMI basso', '21': 'reddito medio · prezzo OMI basso', '31': 'reddito alto · prezzo OMI basso',
+  '12': 'reddito basso · prezzo OMI medio', '22': 'reddito medio · prezzo OMI medio', '32': 'reddito alto · prezzo OMI medio',
+  '13': 'reddito basso · prezzo OMI alto', '23': 'reddito medio · prezzo OMI alto', '33': 'reddito alto · prezzo OMI alto'
+};
+
 /* Config per scope bivariato: quale campo classe leggere dalle righe di
    RANKINGS.comuni, in quale contenitore renderizzare, con quali etichette. */
+/* valueField/fmtVal: per bivariata e bivariataReddito la classifica dentro
+   ogni cella ordina per potere_acquisto_reale (uno dei due assi incrociati
+   in entrambe). bivariataOmi incrocia invece reddito e prezzo OMI: nessuno
+   dei due è potere_acquisto_reale, quindi qui la cella ordina e mostra il
+   prezzo OMI (omi_eur_mq), l'asse davvero rilevante per questa vista. */
 const BIVAR_ACCORDION_CFG = {
-  bivariata:        { classField: 'bivar_class',  containerId: 'bivar-class-accordion',         labels: BIVAR_CLASS_LABEL },
-  bivariataReddito: { classField: 'bivar2_class', containerId: 'bivar-class-accordion-reddito', labels: BIVAR2_CLASS_LABEL }
+  bivariata:        { classField: 'bivar_class',  containerId: 'bivar-class-accordion',         labels: BIVAR_CLASS_LABEL,  valueField: 'valore',      fmtVal: fmtRankVal },
+  bivariataReddito: { classField: 'bivar2_class', containerId: 'bivar-class-accordion-reddito', labels: BIVAR2_CLASS_LABEL, valueField: 'valore',      fmtVal: fmtRankVal },
+  bivariataOmi:     { classField: 'bivar3_class', containerId: 'bivar-class-accordion-omi',     labels: BIVAR3_CLASS_LABEL, valueField: 'omi_eur_mq',  fmtVal: (r) => fmtEuroMq(r.omi_eur_mq) }
 };
 
 function renderBivarAccordion(scope) {
@@ -823,7 +874,7 @@ function renderBivarAccordion(scope) {
   const rows = filterRankingRows(RANKINGS.comuni, 'comuni', st.viewport, st.polygonRing);
   const byClass = {};
   rows.forEach(r => { const cls = r[cfg.classField]; if (!cls) return; (byClass[cls] = byClass[cls] || []).push(r); });
-  Object.values(byClass).forEach(list => list.sort((a, b) => b.valore - a.valore));
+  Object.values(byClass).forEach(list => list.sort((a, b) => b[cfg.valueField] - a[cfg.valueField]));
 
   container.innerHTML = BIVAR_ORDER.map(cls => {
     const list = byClass[cls] || [];
@@ -833,7 +884,7 @@ function renderBivarAccordion(scope) {
       ? top10.map((r, i) => `
         <li class="ranking-item bivar-acc-item" data-cls="${cls}" data-idx="${i}" tabindex="0" role="button">
           <span class="rk-name" title="${esc(r.nome)} (${esc(r.prov)})">${esc(r.nome)} <span class="rk-prov">${esc(r.prov)}</span></span>
-          <span class="rk-val">${fmtRankVal(r)}</span>
+          <span class="rk-val">${cfg.fmtVal(r)}</span>
         </li>`).join('')
       : '<li class="ranking-empty">Nessun comune in questa classe.</li>';
     return `
@@ -1284,7 +1335,7 @@ document.addEventListener('fullscreenchange', () => {
    feature; la vista Province ha solo sigla_prov, quindi una Regione
    selezionata diventa un filtro "in" sull'elenco delle sue province. */
 let HIERARCHY = null; // { regioni: {...}, comuni_bbox: {...} }
-const geoState = { regione: '', provincia: '', comune: '', comuneNome: '', comuneProvincia: '', bivarClass: '', bivarClass2: '', classComuni: '', classProvince: '' };
+const geoState = { regione: '', provincia: '', comune: '', comuneNome: '', comuneProvincia: '', bivarClass: '', bivarClass2: '', bivarClass3: '', classComuni: '', classProvince: '' };
 
 /* Legenda comuni/province: righe cliccabili che filtrano la mappa e le
    classifiche per classe di potere d'acquisto (1-5), combinandosi (AND) con
@@ -1335,6 +1386,7 @@ function setupBivarLegend(containerId, stateKey) {
 }
 setupBivarLegend('legend-bivar', 'bivarClass');
 setupBivarLegend('legend-bivar-reddito', 'bivarClass2');
+setupBivarLegend('legend-bivar-omi', 'bivarClass3');
 
 const fRegione   = document.getElementById('f-regione');
 const fProvincia = document.getElementById('f-provincia');
@@ -1392,12 +1444,13 @@ fComune.addEventListener('change', () => {
 
 function geoConditionsForView(view) {
   const c = [];
-  if (view === 'comuni' || view === 'bivariata' || view === 'bivariataReddito' || view === 'redditiComuni') {
+  if (view === 'comuni' || view === 'bivariata' || view === 'bivariataReddito' || view === 'bivariataOmi' || view === 'redditiComuni') {
     if (geoState.regione) c.push(['==', ['get', 'regione'], geoState.regione]);
     if (geoState.provincia) c.push(['==', ['get', 'sigla_prov'], geoState.provincia]);
     if (geoState.comune) c.push(['==', ['get', 'pro_com'], String(geoState.comune).padStart(6, '0')]);
     if (view === 'bivariata' && geoState.bivarClass) c.push(['==', ['get', 'bivar_class'], geoState.bivarClass]);
     if (view === 'bivariataReddito' && geoState.bivarClass2) c.push(['==', ['get', 'bivar2_class'], geoState.bivarClass2]);
+    if (view === 'bivariataOmi' && geoState.bivarClass3) c.push(['==', ['get', 'bivar3_class'], geoState.bivarClass3]);
     if (view === 'comuni' && geoState.classComuni) c.push(['==', ['get', 'classe_potere_acquisto'], +geoState.classComuni]);
   } else {
     if (geoState.provincia) {

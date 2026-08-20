@@ -195,6 +195,8 @@ html,body{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSyste
 .bivar-grid .bs:hover{transform:scale(1.06)}
 .bivar-grid .bs.active{border-color:#fff}
 .bivar-xlabel{font-size:11px;color:var(--text-dim);text-align:center;margin-top:8px;margin-left:28px}
+.bivar-static-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--text-dim)}
+.bivar-static-row .swatch{width:14px;height:14px;border-radius:3px;flex:0 0 auto}
 .bivar-hover{font-size:12px;min-height:16px;margin-top:9px;color:var(--text-dim)}
 .bivar-clear{
   display:block;margin-top:4px;background:none;border:1px solid var(--panel-border);
