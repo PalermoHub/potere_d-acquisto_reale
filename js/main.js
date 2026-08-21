@@ -1516,7 +1516,25 @@ function syncUrlFromGeoState() {
   if (url !== window.location.pathname + window.location.search + window.location.hash) {
     history.replaceState(null, '', url);
   }
+  notifyParentRoute();
 }
+
+// Se incorporata in iframe su palermohub.opendatasicilia.it, tiene sincronizzata
+// la barra indirizzi del parent (?regione/provincia/comune=...#zoom/lat/lng) via postMessage.
+const PARENT_ORIGIN = 'https://palermohub.opendatasicilia.it';
+function notifyParentRoute() {
+  if (window.parent === window) return;
+  try {
+    window.parent.postMessage({
+      type: 'geo:route',
+      regione: geoState.regione || null,
+      provincia: geoState.provincia || null,
+      comune: geoState.comune || null,
+      hash: window.location.hash,
+    }, PARENT_ORIGIN);
+  } catch (e) { /* iframe non raggiungibile, ignora */ }
+}
+map.on('moveend', notifyParentRoute);
 
 function restoreGeoStateFromUrl() {
   const p = new URLSearchParams(window.location.search);
